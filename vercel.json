@@ -1,0 +1,12 @@
+{
+  "build": {
+    "env": {
+      "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "true"
+    }
+  },
+  "functions": {
+    "src/app/api/**/*.js": {
+      "maxDuration": 30
+    }
+  }
+}
