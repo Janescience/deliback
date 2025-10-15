@@ -12,7 +12,6 @@ export async function GET(request) {
       .limit(10)
       .lean();
 
-    console.log('Sample orders:', sampleOrders);
 
     // Check day of week calculation
     const dayOfWeekTest = await Order.aggregate([
@@ -33,7 +32,6 @@ export async function GET(request) {
       }
     ]);
 
-    console.log('Day of week test:', dayOfWeekTest);
 
     return NextResponse.json({
       success: true,

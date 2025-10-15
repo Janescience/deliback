@@ -32,7 +32,6 @@ export async function PUT(request) {
     const body = await request.json();
     const { day_of_week, is_holiday } = body;
     
-    console.log('PUT /api/holidays received:', { day_of_week, is_holiday });
     
     if (day_of_week === undefined) {
       return NextResponse.json(
@@ -48,14 +47,12 @@ export async function PUT(request) {
     );
     
     if (!holiday) {
-      console.log('Holiday not found for day_of_week:', day_of_week);
       return NextResponse.json(
         { error: 'Holiday not found' },
         { status: 404 }
       );
     }
     
-    console.log('Holiday updated successfully:', holiday);
     return NextResponse.json(holiday);
   } catch (error) {
     console.error('Holiday update error:', error);

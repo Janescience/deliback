@@ -8,7 +8,6 @@ export async function GET(request) {
   try {
     await dbConnect();
     
-    console.log('Starting monthly revenue aggregation...');
     const startTime = Date.now();
     
     // Use Thailand timezone for current year calculation
@@ -59,7 +58,6 @@ export async function GET(request) {
     ]);
     
     const endTime = Date.now();
-    console.log(`Monthly revenue aggregation completed in ${endTime - startTime}ms`);
     
     // Create array for all 12 months with Thai names
     const monthNames = [

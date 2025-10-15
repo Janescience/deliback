@@ -23,8 +23,6 @@ export async function POST(request) {
     await dbConnect();
     const data = await request.json();
     
-    console.log('------> Order Start (Replace Logic) <------');
-    console.log('Received data:', data);
 
     // Validate required fields
     if (!data.deliveryDate) {
@@ -47,9 +45,6 @@ export async function POST(request) {
     const payMethod = mapPaymentMethod(data.payMethod);
     const orderItems = data.order;
 
-    console.log('Shop:', user);
-    console.log('Delivery Date:', deliveryDate);
-    console.log('Pay Method:', payMethod);
 
     let customerId;
     const isPrintDoc = payMethod === 'credit';
@@ -57,7 +52,6 @@ export async function POST(request) {
     // --- Customer Management Section ---
     if(userId === 'ADMIN'){
       let customer = await Customer.findOne({ name : user.trim() });
-      console.log('Order by ADMIN and found customer:', customer);
 
       if (!customer) {
         const newCustomer = await Customer.create({
@@ -73,7 +67,6 @@ export async function POST(request) {
       }
     }else{
       let customer = await Customer.findOne({ name : user.trim(), line_id: userId });
-      console.log('Order by customer and found customer:', customer);
       if (!customer) {
         const newCustomer = await Customer.create({
           line_id: userId,
@@ -103,7 +96,6 @@ export async function POST(request) {
     let isReplacement = false;
     
     if (existingOrder) {
-      console.log(`Found existing order to update: ${existingOrder._id}`);
       isReplacement = true;
       
       // Delete existing order details
@@ -115,7 +107,6 @@ export async function POST(request) {
       existingOrder.total = 0; // Will be updated below
       order = existingOrder;
     } else {
-      console.log('Creating new order');
       // Create new order
       order = await Order.create({
         delivery_date: deliveryDate,
@@ -160,16 +151,12 @@ export async function POST(request) {
     // Create new order details
     if (newOrderDetails.length > 0) {
       await OrderDetail.insertMany(newOrderDetails);
-      console.log(`Added ${newOrderDetails.length} new order items`);
     }
 
     // Update order total and save
     order.total = totalAmount;
     await order.save(); // This will trigger pre('save') hook
-    console.log('Order saved with total:', totalAmount);
 
-    console.log('Order processing completed successfully');
-    console.log('------> Order End <------');
 
     // Get customer info for broadcast
     const customerInfo = await Customer.findById(customerId);
@@ -208,7 +195,6 @@ export async function POST(request) {
 
     try {
       broadcastOrderUpdate(orderUpdateData);
-      console.log('Real-time update broadcasted');
     } catch (broadcastError) {
       console.error('Failed to broadcast update:', broadcastError);
     }

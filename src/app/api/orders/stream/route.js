@@ -74,7 +74,6 @@ export async function GET() {
 
 // Function to broadcast to all connections
 export function broadcastOrderUpdate(orderData) {
-  console.log(`Broadcasting to ${connections.size} connections`);
   
   // Create a copy of connections to iterate over
   const activeConnections = Array.from(connections);
@@ -89,7 +88,6 @@ export function broadcastOrderUpdate(orderData) {
         });
       } else {
         // Connection is closed, remove it
-        console.log('Removing closed connection during broadcast');
         connections.delete(connection);
       }
     } catch (error) {
@@ -98,5 +96,4 @@ export function broadcastOrderUpdate(orderData) {
     }
   });
   
-  console.log(`Active connections after cleanup: ${connections.size}`);
 }

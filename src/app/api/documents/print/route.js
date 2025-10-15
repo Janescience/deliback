@@ -2,19 +2,15 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request) {
   try {
-    console.log('=== Document Print API Called ===');
     
     const body = await request.json();
-    console.log('Request body:', JSON.stringify(body, null, 2));
     
     const { documents } = body;
     
     if (!documents || documents.length === 0) {
-      console.log('Error: No documents provided');
       return NextResponse.json({ error: 'No documents provided' }, { status: 400 });
     }
     
-    console.log(`Processing ${documents.length} documents for printing`);
     
     // Generate HTML content for printing
     const htmlContent = generatePrintHTML(documents);
@@ -25,13 +21,8 @@ export async function POST(request) {
     });
     
   } catch (error) {
-    console.error('=== Document Print Error ===');
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    console.error('================================');
-    
     return NextResponse.json(
-      { 
+      {
         error: error.message,
         details: 'Check server logs for more information'
       },

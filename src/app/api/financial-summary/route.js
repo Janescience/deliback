@@ -6,7 +6,6 @@ export async function GET(request) {
   try {
     await dbConnect();
     
-    console.log('Starting financial summary aggregation...');
     const startTime = Date.now();
     
     // Use MongoDB aggregation pipeline for better performance
@@ -117,7 +116,6 @@ export async function GET(request) {
     ]);
     
     const endTime = Date.now();
-    console.log(`Financial summary aggregation completed in ${endTime - startTime}ms`);
     
     if (!result || result.length === 0) {
       return NextResponse.json({

@@ -58,8 +58,6 @@ export async function GET(request) {
       customerQuery.pay_method = searchParams.get('pay_method');
     }
     
-    console.log('Fetching orders with query:', query, { page, limit, skip });
-    console.log('Customer query for pay_method:', customerQuery);
     
     let orders;
     
@@ -77,7 +75,6 @@ export async function GET(request) {
       .limit(limit)
       .lean();
       
-    console.log('Basic orders fetch successful, now populating...');
     
     // Manually populate to have better error control
     const populatedOrders = await Promise.all(
@@ -114,7 +111,6 @@ export async function GET(request) {
       })
     );
       
-    console.log('Found orders:', populatedOrders.length);
     
     const total = await Order.countDocuments(query);
     
@@ -139,7 +135,6 @@ export async function POST(request) {
     await dbConnect();
     const body = await request.json();
     
-    console.log('Creating order with data:', body);
     
     // Validate required fields
     if (!body.delivery_date) {

@@ -4,28 +4,15 @@ import chromium from '@sparticuz/chromium';
 
 export async function POST(request) {
   try {
-    console.log('=== Document Download API Called ===');
-    
     const body = await request.json();
-    console.log('Request body:', JSON.stringify(body, null, 2));
-    
     const { documents } = body;
-    
+
     if (!documents || documents.length === 0) {
-      console.log('Error: No documents provided');
       return NextResponse.json({ error: 'No documents provided' }, { status: 400 });
     }
-    
-    console.log(`Processing ${documents.length} documents for download`);
-    
-    // For now, return mock ZIP data
-    // Later this will generate actual PDFs and zip them
-    console.log('Generating mock ZIP content...');
+
     const mockZipContent = await generateMockZip(documents);
-    console.log('Mock ZIP generated, size:', mockZipContent.length, 'bytes');
-    
     const filename = `documents_${Date.now()}.zip`;
-    console.log('Sending ZIP file:', filename);
     
     return new NextResponse(mockZipContent, {
       headers: {
@@ -52,52 +39,32 @@ export async function POST(request) {
 
 async function generateMockZip(documents) {
   try {
-    console.log('=== Generating Mock ZIP ===');
-    console.log('Documents to process:', documents.length);
-    
-    // Mock ZIP file content (minimal ZIP structure)
-    // In a real implementation, you would use a library like 'archiver' or 'jszip'
-    const files = await Promise.all(documents.map(async (doc, index) => {
-      console.log(`Processing document ${index + 1}:`, {
-        customer: doc.customer?.name,
-        docNumber: doc.docNumber,
-        docType: doc.docType
-      });
-      
+    const files = await Promise.all(documents.map(async (doc) => {
       const content = await generatePDF(doc);
-      
+
       return {
         name: `${doc.customer.name}_${doc.docNumber}.pdf`,
         content: content
       };
     }));
-    
-    console.log(`Generated ${files.length} file entries`);
-    
+
     // For single file, return the content directly without ZIP structure
     if (files.length === 1) {
-      console.log('Returning single file content');
       const buffer = Buffer.from(files[0].content, 'utf8');
-      console.log('Single file buffer created, size:', buffer.length);
-      console.log('=========================');
       return buffer;
     }
-    
+
     // Simple mock ZIP structure for multiple files
     let zipContent = 'PK\x03\x04'; // ZIP file header
-    
-    files.forEach((file, index) => {
-      console.log(`Adding file ${index + 1} to ZIP:`, file.name);
+
+    files.forEach((file) => {
       zipContent += file.name + '\n';
       zipContent += file.content + '\n';
     });
-    
+
     zipContent += 'PK\x05\x06'; // ZIP end header
-    
+
     const buffer = Buffer.from(zipContent, 'utf8');
-    console.log('ZIP buffer created, size:', buffer.length);
-    console.log('=========================');
-    
     return buffer;
   } catch (error) {
     console.error('Error in generateMockZip:', error);
@@ -107,7 +74,6 @@ async function generateMockZip(documents) {
 
 async function generatePDF(document) {
   try {
-    console.log('Generating PDF for:', document.customer?.name, document.docNumber);
     
     const docTypeText = document.docType === 'delivery_note' ? 'ใบส่งสินค้า' :
                         document.docType === 'billing' ? 'ใบวางบิล' : 'ใบเสร็จ';
@@ -135,8 +101,7 @@ async function generatePDF(document) {
     });
     
     await browser.close();
-    
-    console.log('PDF generated successfully, size:', pdfBuffer.length);
+
     return pdfBuffer;
     
   } catch (error) {

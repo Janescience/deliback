@@ -23,16 +23,13 @@ const BKK_FMT = new Intl.DateTimeFormat("en-CA", {
 
 // แปลงค่าจาก Excel (Date หรือ string) -> Date(UTC midnight) ของวันตามเวลาไทย
 function convertExcelDateToThailand(excelDate) {
-  console.log('Raw Excel date:', excelDate);  
   // แปลงเป็น Date object ก่อน
   const d = excelDate instanceof Date ? excelDate : new Date(excelDate);
-  console.log('Excel date:', d);  
 
   // ดึงค่า year, month, date จาก local timezone (ซึ่งควรเป็นเวลาไทย)
   const year = d.getFullYear();
   const month = d.getMonth(); // 0-based
   const date = d.getDate();
-  console.log(' Excel date formated :', new Date(Date.UTC(year, month, date, 0, 0, 0, 0)));  
 
   // สร้าง Date object ใหม่ที่เป็น UTC midnight ของวันนั้น
   return new Date(Date.UTC(year, month, date, 0, 0, 0, 0));
@@ -129,7 +126,6 @@ function mapPaymentMethod(thaiMethod) {
 
 // Migrate Customers
 async function migrateCustomers(customersData) {
-  console.log('\n📋 Migrating Customers...');
   
   const customerMap = new Map();
   let successCount = 0;
@@ -147,7 +143,6 @@ async function migrateCustomers(customersData) {
       
     //   if (existingCustomer) {
     //     customerMap.set(row['shop'] || row['ชื่อลูกค้า'], existingCustomer._id);
-    //     console.log(`⚠️  Customer already exists: ${row['shop'] || row['ชื่อลูกค้า']}`);
     //     continue;
     //   }
       
@@ -166,20 +161,17 @@ async function migrateCustomers(customersData) {
       const customer = await Customer.create(customerData);
       customerMap.set(customer.name, customer._id);
       successCount++;
-      console.log(`✅ Created customer: ${customer.name}`);
     } catch (error) {
       errorCount++;
       console.error(`❌ Error creating customer ${row['shop'] || row['ชื่อลูกค้า']}:`, error.message);
     }
   }
   
-  console.log(`✅ Customers migrated: ${successCount} success, ${errorCount} errors`);
   return customerMap;
 }
 
 // Create missing customers from orders/payments (เฉพาะลูกค้าที่อยู่ในช่วง 2 เดือนล่าสุด)
 async function createMissingCustomers(ordersData, paymentsData, customerMap, twoMonthsAgo) {
-  console.log('\n📋 Creating missing customers (for recent 2 months data)...');
   
   // Filter data ในช่วง 2 เดือนล่าสุด
   const recentOrders = ordersData;
@@ -218,20 +210,17 @@ async function createMissingCustomers(ordersData, paymentsData, customerMap, two
         const customer = await Customer.create(customerData);
         customerMap.set(customerName, customer._id);
         createdCount++;
-        console.log(`✅ Created missing customer: ${customerName}`);
       } catch (error) {
         console.error(`❌ Error creating customer ${customerName}:`, error.message);
       }
     }
   }
   
-  console.log(`✅ Created ${createdCount} missing customers`);
   return customerMap;
 }
 
 // Migrate Vegetables
 async function migrateVegetables(vegetablesData) {
-  console.log('\n🥬 Migrating Vegetables...');
   
   const vegetableMap = new Map();
   let successCount = 0;
@@ -246,7 +235,6 @@ async function migrateVegetables(vegetablesData) {
       
     //   if (existingVeg) {
     //     vegetableMap.set(row['ชื่อผักอังกฤษ'], existingVeg._id);
-    //     console.log(`⚠️  Vegetable already exists: ${row['ชื่อผักอังกฤษ']}`);
     //     continue;
     //   }
       
@@ -261,20 +249,17 @@ async function migrateVegetables(vegetablesData) {
       const vegetable = await Vegetable.create(vegetableData);
       vegetableMap.set(vegetable.name_eng, vegetable._id);
       successCount++;
-      console.log(`✅ Created vegetable: ${vegetable.name_eng}`);
     } catch (error) {
       errorCount++;
       console.error(`❌ Error creating vegetable ${row['ชื่อผักอังกฤษ']}:`, error.message);
     }
   }
   
-  console.log(`✅ Vegetables migrated: ${successCount} success, ${errorCount} errors`);
   return vegetableMap;
 }
 
 // Process orders by grouping order details by customer and delivery date
 async function migrateOrders(ordersData, paymentsData, customerMap, vegetableMap) {
-  console.log('\n📦 Migrating Orders...');
   
   // ========== กำหนดช่วงเวลา 2 เดือนล่าสุด ==========
   // กำหนดวันนี้และ twoMonthsAgo ตามปฏิทินไทย แล้วทำให้เป็น UTC midnight
@@ -286,7 +271,6 @@ async function migrateOrders(ordersData, paymentsData, customerMap, vegetableMap
     twoMonthsAgo.setUTCMonth(twoMonthsAgo.getUTCMonth() - 1); // ถอย 2 เดือนแบบ UTC-safe
 
   
-  console.log(`📅 Filtering data from: ${twoMonthsAgo.toLocaleDateString('th-TH')} to ${today.toLocaleDateString('th-TH')}`);
   
   // Filter orders ในช่วง 2 เดือนล่าสุด
   const filteredOrders = ordersData;
@@ -294,28 +278,20 @@ async function migrateOrders(ordersData, paymentsData, customerMap, vegetableMap
   // Filter payments ในช่วง 2 เดือนล่าสุด
   const filteredPayments = paymentsData;
   
-  console.log(`📊 Filtered orders: ${filteredOrders.length} from ${ordersData.length} total`);
-  console.log(`📊 Filtered payments: ${filteredPayments.length} from ${paymentsData.length} total`);
   
   // ========== DEBUG: ตรวจสอบ payment data ==========
-  console.log('\n🔍 Checking payment data structure...');
   if (filteredPayments.length > 0) {
     const samplePayment = filteredPayments[0];
-    console.log('Payment columns:', Object.keys(samplePayment));
     
     // ตรวจสอบ column ที่อาจจะเป็น docnumber
     const possibleDocColumns = Object.keys(samplePayment).filter(key => 
       key.includes('เลข') || key.includes('ใบ') || key.includes('doc') || key.includes('Doc')
     );
-    console.log('Possible document number columns:', possibleDocColumns);
     
     // แสดงตัวอย่างข้อมูล
-    console.log('\nSample payment data:');
     filteredPayments.slice(0, 3).forEach((payment, idx) => {
-      console.log(`Payment ${idx + 1}:`);
       possibleDocColumns.forEach(col => {
         if (payment[col]) {
-          console.log(`  ${col}: ${payment[col]}`);
         }
       });
     });
@@ -376,7 +352,6 @@ async function migrateOrders(ordersData, paymentsData, customerMap, vegetableMap
     
     if (docnumber && docnumber !== '') {
       docNumberCount++;
-      console.log(`📄 Found docnumber: ${docnumber} for ${customerName} on ${dateKey}`);
     }
     
     paymentMap.set(key, {
@@ -386,7 +361,6 @@ async function migrateOrders(ordersData, paymentsData, customerMap, vegetableMap
     });
   }
   
-  console.log(`\n📄 Total document numbers found: ${docNumberCount}`);
   
   // Create orders and order details
   let orderSuccess = 0;
@@ -412,7 +386,6 @@ async function migrateOrders(ordersData, paymentsData, customerMap, vegetableMap
       });
       
       if (existingOrder) {
-        console.log(`⚠️  Order already exists for ${group.customerName} on ${group.deliveryDate.toLocaleDateString('th-TH')}`);
         continue;
       }
       
@@ -437,7 +410,6 @@ async function migrateOrders(ordersData, paymentsData, customerMap, vegetableMap
       
       const order = await Order.create(orderData);
       orderSuccess++;
-      console.log(`✅ Created order for ${group.customerName} on ${group.deliveryDate}${paymentInfo?.docnumber ? ' with docnumber: ' + paymentInfo.docnumber : ''}`);
       
       // Create order details
       for (const item of group.items) {
@@ -485,17 +457,12 @@ async function migrateOrders(ordersData, paymentsData, customerMap, vegetableMap
     }
   }
   
-  console.log(`✅ Orders migrated: ${orderSuccess} success, ${orderError} errors`);
-  console.log(`📄 Orders with document numbers: ${ordersWithDocNumber}`);
-  console.log(`✅ Order details created: ${detailSuccess} success, ${detailError} errors`);
   
   return twoMonthsAgo;
 }
 
 // Main migration function
 export async function GET() {
-  console.log('🚀 Starting migration...');
-  console.log('⏰ Processing only last 2 months of data for testing...\n');
   
   try {
     // Connect to MongoDB
@@ -509,14 +476,8 @@ export async function GET() {
     // Read and parse Excel file
 
     const excelPath = path.join(process.cwd(), 'public/data/DeliveryPayment Record.xlsx');
-    console.log(`📂 Reading Excel file from: ${excelPath}`);
     
     const data = await parseExcelFile(excelPath);
-    console.log('✅ Excel file parsed successfully');
-    console.log(`  - Orders: ${data.orders.length} rows`);
-    console.log(`  - Payments: ${data.payments.length} rows`);
-    console.log(`  - Customers: ${data.customers.length} rows`);
-    console.log(`  - Vegetables: ${data.vegetables.length} rows`);
     
     // คำนวณวันที่ 2 เดือนย้อนหลัง
     const today = new Date();
@@ -529,7 +490,6 @@ export async function GET() {
     const vegetableMap = await migrateVegetables(data.vegetables);
     await migrateOrders(data.orders, data.payments, updatedCustomerMap, vegetableMap);
     
-    console.log('\n✅ Migration completed successfully (Last 2 months only)!');
     return NextResponse.json({ 
       message: 'Migration completed successfully',
       note: 'Only processed last 2 months of data',

@@ -9,7 +9,6 @@ export async function POST(request) {
     const body = await request.json();
     const { date, selectedOrders, preview = false } = body;
     
-    console.log('Generating documents for:', { date, orderCount: selectedOrders.length });
     
     const documents = [];
     let runNumberRC = 1; // ใบเสร็จ
@@ -103,7 +102,6 @@ export async function POST(request) {
       }
     }
     
-    console.log('Generated documents:', documents.length);
     
     return NextResponse.json({
       success: true,

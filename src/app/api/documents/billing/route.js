@@ -42,8 +42,6 @@ export async function GET(request) {
     // Billing date (15th of selected month)
     billingDate = new Date(Date.UTC(billingYear, billingMonth - 1, billingDay, 0, 0, 0, 0));
     
-    console.log(`Billing period: ${startDate.toDateString()} to ${endDate.toDateString()}`);
-    console.log(`Selected period: ${selectedPeriod}, Year: ${billingYear}, Month: ${billingMonth}`);
 
     // Find orders with document numbers in the billing period using aggregation to include details
     const orders = await Order.aggregate([
@@ -74,14 +72,12 @@ export async function GET(request) {
       }
     ]);
 
-    console.log(`Found ${orders.length} orders with docnumber in period`);
 
     // Filter for credit customers only and group by customer
     const creditOrders = orders.filter(order =>
       order.customer_id && order.customer_id.pay_method === 'credit'
     );
 
-    console.log(`Found ${creditOrders.length} credit orders`);
     
     const groupedByCustomer = {};
     creditOrders.forEach(order => {
@@ -137,7 +133,6 @@ export async function POST(request) {
     const body = await request.json();
     const { selectedCustomers, billingDate } = body;
     
-    console.log('Generating billing documents for:', selectedCustomers.length, 'customers');
     
     const documents = [];
     let runNumberStart = 1;
@@ -216,7 +211,6 @@ export async function POST(request) {
       documents.push(documentData);
     }
     
-    console.log('Generated billing documents:', documents.length);
     
     return NextResponse.json({
       success: true,

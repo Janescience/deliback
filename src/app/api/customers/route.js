@@ -10,9 +10,7 @@ export async function GET(request) {
     // Drop line_id index if it exists to prevent duplicate key errors
     try {
       await Customer.collection.dropIndex('line_id_1');
-      console.log('Dropped line_id index successfully');
     } catch (dropError) {
-      console.log('line_id index drop failed (expected if index does not exist):', dropError.message);
     }
     
     const { searchParams } = new URL(request.url);

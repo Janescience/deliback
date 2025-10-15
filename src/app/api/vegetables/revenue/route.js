@@ -8,7 +8,6 @@ export async function GET(request) {
   try {
     await dbConnect();
 
-    console.log('Calculating vegetable revenue statistics...');
 
     // Aggregate revenue by vegetable
     const revenueStats = await OrderDetail.aggregate([
@@ -33,7 +32,6 @@ export async function GET(request) {
       }
     ]);
 
-    console.log('Found revenue stats for', revenueStats.length, 'vegetables');
 
     // Get vegetable details and add ranking
     const vegetablesWithRevenue = await Promise.all(
@@ -42,7 +40,6 @@ export async function GET(request) {
           const vegetable = await Vegetable.findById(stat._id).lean();
 
           if (!vegetable) {
-            console.log('Vegetable not found for ID:', stat._id);
             return null;
           }
 
@@ -63,7 +60,6 @@ export async function GET(request) {
     // Filter out null values (vegetables that couldn't be found)
     const validVegetables = vegetablesWithRevenue.filter(v => v !== null);
 
-    console.log('Returning', validVegetables.length, 'vegetables with revenue data');
 
     return NextResponse.json({
       vegetables: validVegetables,

@@ -38,7 +38,6 @@ export async function GET(request) {
     // Convert to MongoDB dayOfWeek (1=Sunday, 2=Monday, ..., 7=Saturday)
     const mongoTargetDay = targetDayOfWeek === 0 ? 1 : targetDayOfWeek + 1;
 
-    console.log('Predicting for:', targetDate.toDateString(), 'Day of week:', mongoTargetDay,
                 daysChecked > 0 ? `(skipped ${daysChecked} holiday(s))` : '');
 
     // Step 1: Analyze customer ordering patterns to find high-probability customers
