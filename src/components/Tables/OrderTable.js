@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { Edit2, Trash2, FileText, ChevronUp, ChevronDown, Check, X ,Salad,Weight } from 'lucide-react';
+import { Edit2, Trash2, FileText, ChevronUp, ChevronDown, Check, X  } from 'lucide-react';
 import Avatar from '../Avatar';
 
 export default function OrderTable({ orders, onEdit, onDelete }) {
@@ -58,9 +58,8 @@ export default function OrderTable({ orders, onEdit, onDelete }) {
               {/* Second line: Vegetables count, Payment method & status, Expand indicator */}
               <div className="flex justify-between items-center mt-2">
                 <div className="flex items-center space-x-2">
-                  <Salad size={17} className="text-gray-700" />
                   <div className="text-gray-600">
-                     {order.details?.length || 0}
+                     {order.details?.length || 0} รายการ
                   </div>
                   <span className="text-gray-300">•</span>
                   <div className="text-black font-light ">
@@ -82,8 +81,8 @@ export default function OrderTable({ orders, onEdit, onDelete }) {
                       <table className="w-full text-xs">
                         <thead className="bg-black text-white">
                           <tr>
-                            <th className="px-2 py-1.5 text-left font-light">ผัก</th>
-                            <th className="px-2 py-1.5 text-right font-light">กก.</th>
+                            <th className="px-2 py-1.5 text-left font-light">รายการสินค้า</th>
+                            <th className="px-2 py-1.5 text-right font-light">จำนวน(กก.)</th>
                             <th className="px-2 py-1.5 text-right font-light">ราคา</th>
                             <th className="px-2 py-1.5 text-right font-light">รวม</th>
                           </tr>
@@ -92,7 +91,7 @@ export default function OrderTable({ orders, onEdit, onDelete }) {
                           {order.details.map((detail, index) => (
                             <tr key={index} className={index !== 0 ? 'border-t border-minimal' : ''}>
                               <td className="px-2 py-1.5 text-black font-light">
-                                {detail.vegetable_id?.name_th || 'ผักไม่ระบุ'}
+                                {detail.vegetable_id?.name_th || 'ไม่ระบุ'}
                               </td>
                               <td className="px-2 py-1.5 text-right text-minimal-gray">
                                 {parseFloat(detail.quantity).toFixed(1)}
@@ -109,7 +108,7 @@ export default function OrderTable({ orders, onEdit, onDelete }) {
                       </table>
                     </div>
                   ) : (
-                    <p className="text-gray-600 text-xs mb-2">ไม่มีรายละเอียดผัก</p>
+                    <p className="text-gray-600 text-xs mb-2">ไม่มีรายละเอียดสินค้า</p>
                   )}
 
                   {/* Action buttons - Compact */}
@@ -150,7 +149,7 @@ export default function OrderTable({ orders, onEdit, onDelete }) {
             <tr>
               <th className="px-3 py-3  text-left  font-light whitespace-nowrap w-[90px]">วันที่จัดส่ง</th>
               <th className="px-3 py-3  text-left font-light whitespace-nowrap w-[180px]">ลูกค้า</th>
-              <th className="px-3 py-3  text-left  font-light whitespace-nowrap w-[250px]">รายการผัก</th>
+              <th className="px-3 py-3  text-left  font-light whitespace-nowrap w-[250px]">รายการสินค้า</th>
               <th className="px-3 py-3  text-right  font-light whitespace-nowrap w-[80px]">จำนวน/กก.</th>
               <th className="px-3 py-3  text-right font-light whitespace-nowrap w-[100px]">ยอดรวม/บ.</th>
               <th className="px-3 py-3  text-center font-light whitespace-nowrap w-[70px]">ประเภทการชำระ</th>
@@ -184,7 +183,7 @@ export default function OrderTable({ orders, onEdit, onDelete }) {
                           key={index}
                           className={`px-1 py-0.5 font-light rounded whitespace-nowrap text-xs ${getVegetableColor()}`}
                         >
-                          {detail.vegetable_id?.name_eng || 'ผักไม่ระบุ'}
+                          {detail.vegetable_id?.name_eng || 'ไม่ระบุ'}
                         </span>
                       )) || '-'}
                     </div>

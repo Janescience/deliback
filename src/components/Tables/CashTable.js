@@ -154,7 +154,7 @@ export default function CashTable({ customers }) {
                             <thead className="bg-minimal-gray">
                               <tr>
                                 <th className="px-3 py-2 text-left text-black font-light">วันที่จัดส่ง</th>
-                                <th className="px-3 py-2 text-left text-black font-light">รายการผัก</th>
+                                <th className="px-3 py-2 text-left text-black font-light">รายการสินค้า</th>
                                 <th className="px-3 py-2 text-center text-black font-light">สถานะ</th>
                                 <th className="px-3 py-2 text-right text-black font-light">ยอดรวม</th>
                               </tr>

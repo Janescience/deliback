@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { ChartArea, ShoppingCart, Angry, User, Carrot, Calendar, Settings, ChevronDown, Printer, LeafyGreen } from 'lucide-react';
+import { ChartArea, ShoppingCart, Angry, User, Box, Calendar, Settings, ChevronDown, Printer, LeafyGreen } from 'lucide-react';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -44,8 +44,8 @@ export default function Sidebar() {
     },
     { 
       href: '/vegetables', 
-      label: 'รายการผัก',
-      icon: <Carrot size={22} />
+      label: 'รายการสินค้า',
+      icon: <Box size={22} />
     },
     { 
       href: '/holidays', 

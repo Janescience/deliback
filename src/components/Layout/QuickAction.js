@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Salad, Carrot,Truck, FileText, ChevronRight, ChevronLeft } from 'lucide-react';
+import { ShoppingBasket, PackageOpen,Truck, FileText, ChevronRight, ChevronLeft } from 'lucide-react';
 
 export default function QuickAction() {
   const [isOpen, setIsOpen] = useState(false);
@@ -129,7 +129,7 @@ export default function QuickAction() {
             onClick={() => setIsOpen(true)}
             className="relative bg-black text-white px-3 py-3 rounded-full shadow-lg hover:bg-gray-800 transition-all"
           >
-            <Salad className="w-5 h-5" />
+            <ShoppingBasket className="w-5 h-5" />
             {/* Customer Count Badge */}
             {todayCustomerSummary.length > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">
@@ -147,7 +147,7 @@ export default function QuickAction() {
         {/* Header */}
         <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
           <div className="flex items-center">
-            <Salad className="w-5 h-5 text-gray-700 mr-2" />
+            <ShoppingBasket className="w-5 h-5 text-gray-700 mr-2" />
             <h2 className="text-base font-light text-black">สรุปคำสั่งซื้อวันนี้</h2>
           </div>
           <button
@@ -168,8 +168,8 @@ export default function QuickAction() {
                 onClick={() => toggleCard('vegetable')}
               >
                 <div className="flex items-center">
-                  <Carrot className="w-4 h-4 text-gray-700 mr-2" />
-                  <h3 className="font-light text-black">รายการตัดผัก</h3>
+                  <PackageOpen className="w-4 h-4 text-gray-700 mr-2" />
+                  <h3 className="font-light text-black">รายการเตรียมสินค้า</h3>
                   {expandedCard !== 'vegetable' && (
                     <span className="ml-2 px-2 py-0.5 bg-gray-200 text-gray-800 rounded-full text-xs">
                       {todayVegetableSummary.length}
@@ -190,7 +190,7 @@ export default function QuickAction() {
                   <div className="space-y-1">
                     {/* Header Row */}
                     <div className="flex justify-between items-center py-1.5 border-b border-gray-200 bg-gray-50 rounded px-2">
-                      <span className="font-light text-gray-600 text-sm">รายการผัก</span>
+                      <span className="font-light text-gray-600 text-sm">รายการสินค้า</span>
                       <span className="font-light text-gray-600 text-sm">จำนวน/กก.</span>
                     </div>
                     

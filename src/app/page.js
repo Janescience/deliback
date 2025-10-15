@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { HandCoins, Coins, CreditCard, ArrowRightLeft, Check, X, BarChart3, Home, Wallet, Trophy, Users, Calendar, Brain, TrendingUp, AlertTriangle, ShoppingCart, Target, TrendingDown, UserPlus, Clock, Carrot } from 'lucide-react';
+import { HandCoins, Coins, CreditCard, ArrowRightLeft, Check, X, BarChart3, Home, Wallet, Trophy, Users, Calendar, Brain, TrendingUp, AlertTriangle, ShoppingCart, Target, TrendingDown, UserPlus, Clock, Box } from 'lucide-react';
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function Dashboard() {
@@ -654,7 +654,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-[2px] bg-gray-600"></div>
-                  <span className="text-sm text-gray-600">น้ำหนัก (กก.)</span>
+                  <span className="text-sm text-gray-600">จำนวน (กก.)</span>
                 </div>
               </div>
 
@@ -694,7 +694,7 @@ export default function Dashboard() {
                       fontSize={isMobile ? 10 : 14}
                       tick={{ fontSize: isMobile ? 10 : 14 }}
                     />
-                    {/* แสดง YAxis สำหรับน้ำหนักด้านขวา */}
+                    {/* แสดง YAxis สำหรับจำนวนด้านขวา */}
                     <YAxis 
                       yAxisId="weight"
                       orientation="right"
@@ -708,7 +708,7 @@ export default function Dashboard() {
                         if (name === 'revenue') {
                           return [formatMoney(value) + ' บาท', 'รายได้'];
                         } else if (name === 'totalWeight') {
-                          return [formatWeight(value) + ' กก.', 'น้ำหนัก'];
+                          return [formatWeight(value) + ' กก.', 'จำนวน'];
                         }
                         return [value, name];
                       }}
@@ -735,12 +735,12 @@ export default function Dashboard() {
                         formatter: (value) => isMobile ? `${Math.round(value/1000)}k` : formatMoney(value)
                       }}
                     />
-                    {/* แสดงน้ำหนักเป็นเส้น */}
+                    {/* แสดงจำนวนเป็นเส้น */}
                     <Line
                       yAxisId="weight"
                       type="monotone"
                       dataKey="totalWeight"
-                      name="น้ำหนัก"
+                      name="จำนวน"
                       stroke="#6b7280"
                       strokeWidth={2}
                       dot={{ 
@@ -841,7 +841,7 @@ export default function Dashboard() {
                 <div className="mb-6">
                   <div className="text-sm font-extralight text-black mb-3 flex items-center">
                     <TrendingUp className="w-5 h-5 mr-2" />
-                    ผักที่คาดว่าจะได้รับความนิยม
+                    สินค้าที่คาดว่าจะได้รับความนิยม
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     {orderPredictions.overallVegetableDemand.slice(0, 8).map((veg, index) => (
@@ -924,7 +924,7 @@ export default function Dashboard() {
                               {/* ผักสั่งประจำ */}
                               {regularVegetables.length > 0 && (
                                 <div>
-                                  <div className="text-sm font-extralight text-black mb-2">ผักสั่งประจำ:</div>
+                                  <div className="text-sm font-extralight text-black mb-2">สินค้าสั่งประจำ:</div>
                                   <div className="space-y-2">
                                     {regularVegetables.map((pred, predIndex) => (
                                       <div key={predIndex} className="flex justify-between items-center text-sm bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
@@ -1090,8 +1090,8 @@ export default function Dashboard() {
           <div className="bg-white border border-gray-100 rounded-lg shadow-sm">
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
               <div className="flex items-center">
-                <Carrot className="w-6 h-6 text-gray-700 mr-3" />
-                <h2 className="text-lg font-extralight text-black">ผักขายดี</h2>
+                <Box className="w-6 h-6 text-gray-700 mr-3" />
+                <h2 className="text-lg font-extralight text-black">สินค้าขายดี</h2>
               </div>
             </div>
 
@@ -1106,7 +1106,7 @@ export default function Dashboard() {
                 }`}
               >
                 <TrendingUp className="w-4 h-4 inline mr-2" />
-                น้ำหนัก
+                จำนวน
               </button>
               <button
                 onClick={() => setActiveVegetableTab('revenue')}

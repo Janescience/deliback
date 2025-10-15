@@ -251,7 +251,7 @@ export default function VegetablesPage() {
                 <div className="flex justify-between items-center text-xs text-minimal-gray">
                   <div className={`flex items-center gap-1 transition-all duration-300 ${showRevenue ? 'opacity-100' : 'opacity-0'}`}>
                     <ChevronLeft size={14} />
-                    รายการผัก
+                    รายการสินค้า
                   </div>
 
                   {/* Dots Indicator */}

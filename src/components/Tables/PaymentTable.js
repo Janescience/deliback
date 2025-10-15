@@ -370,7 +370,7 @@ export default function PaymentTable({ customers, onPaymentUpdate }) {
                                     <thead className="bg-gray-50">
                                       <tr>
                                         <th className="px-3 py-2 text-left text-black font-extralight">วันที่จัดส่ง</th>
-                                        <th className="px-3 py-2 text-left text-black font-extralight">รายการผัก</th>
+                                        <th className="px-3 py-2 text-left text-black font-extralight">รายการสินค้า</th>
                                         <th className="px-3 py-2 text-center text-black font-extralight">เอกสาร</th>
                                         <th className="px-3 py-2 text-right text-black font-extralight">ยอดรวม</th>
                                       </tr>
@@ -438,7 +438,7 @@ export default function PaymentTable({ customers, onPaymentUpdate }) {
                                       />
                                     </th>
                                     <th className="px-3 py-2 text-left text-black font-extralight">วันที่จัดส่ง</th>
-                                    <th className="px-3 py-2 text-left text-black font-extralight">รายการผัก</th>
+                                    <th className="px-3 py-2 text-left text-black font-extralight">รายการสินค้า</th>
                                     <th className="px-3 py-2 text-center text-black font-extralight">เอกสาร</th>
                                     <th className="px-3 py-2 text-right text-black font-extralight">ยอดรวม</th>
                                   </tr>

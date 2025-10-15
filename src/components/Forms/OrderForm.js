@@ -279,7 +279,7 @@ export default function OrderForm({ order, onSubmit, onCancel }) {
       <div>
         <div className="mb-2 sm:mb-3">
           <label className="block text-xs sm:text-sm font-light text-black">
-            รายการผัก
+            รายการสินค้า
           </label>
         </div>
 
@@ -294,7 +294,7 @@ export default function OrderForm({ order, onSubmit, onCancel }) {
                 }
               }}
             >
-              <option value="">เลือกผักที่ต้องการ...</option>
+              <option value="">เลือกสินค้า...</option>
               {availableVegetables.map(vegetable => (
                 <option key={vegetable._id} value={vegetable._id}>
                   {vegetable.name_eng}
@@ -307,7 +307,7 @@ export default function OrderForm({ order, onSubmit, onCancel }) {
         {/* Selected Vegetables List */}
         {selectedVegetables.length === 0 ? (
           <div className="text-center py-6 sm:py-8 text-minimal-gray text-xs sm:text-sm">
-            ยังไม่ได้เลือกผัก
+            ยังไม่ได้เลือกสินค้า
           </div>
         ) : (
           <div className="space-y-2 sm:space-y-3">
