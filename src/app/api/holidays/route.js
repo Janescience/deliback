@@ -1,0 +1,67 @@
+import { NextResponse } from 'next/server';
+import dbConnect from '@/lib/mongodb';
+import Holiday from '@/models/Holiday';
+
+// GET all weekly holidays
+export async function GET(request) {
+  try {
+    await dbConnect();
+
+    // Get all 7 days of week
+    let holidays = await Holiday.find({})
+      .sort({ day_of_week: 1 })
+      .lean();
+    
+    return NextResponse.json({
+      holidays,
+      total: holidays.length
+    });
+  } catch (error) {
+    console.error('GET holidays error:', error);
+    return NextResponse.json(
+      { error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT update weekly holiday status
+export async function PUT(request) {
+  try {
+    await dbConnect();
+    const body = await request.json();
+    const { day_of_week, is_holiday } = body;
+    
+    console.log('PUT /api/holidays received:', { day_of_week, is_holiday });
+    
+    if (day_of_week === undefined) {
+      return NextResponse.json(
+        { error: 'day_of_week is required' },
+        { status: 400 }
+      );
+    }
+    
+    const holiday = await Holiday.findOneAndUpdate(
+      { day_of_week },
+      { is_holiday },
+      { new: true, runValidators: true }
+    );
+    
+    if (!holiday) {
+      console.log('Holiday not found for day_of_week:', day_of_week);
+      return NextResponse.json(
+        { error: 'Holiday not found' },
+        { status: 404 }
+      );
+    }
+    
+    console.log('Holiday updated successfully:', holiday);
+    return NextResponse.json(holiday);
+  } catch (error) {
+    console.error('Holiday update error:', error);
+    return NextResponse.json(
+      { error: error.message },
+      { status: 400 }
+    );
+  }
+}
