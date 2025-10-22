@@ -12,7 +12,8 @@ export default function CustomerForm({ customer, onSubmit, onCancel }) {
     pay_method: 'cash',
     tax_id: '',
     address: '',
-    is_print: false
+    is_print: false,
+    active: true
   });
 
   useEffect(() => {
@@ -26,7 +27,8 @@ export default function CustomerForm({ customer, onSubmit, onCancel }) {
         pay_method: customer.pay_method || 'cash',
         tax_id: customer.tax_id || '',
         address: customer.address || '',
-        is_print: customer.is_print || false
+        is_print: customer.is_print || false,
+        active: customer.active !== undefined ? customer.active : true
       });
     }
   }, [customer]);
@@ -132,6 +134,20 @@ export default function CustomerForm({ customer, onSubmit, onCancel }) {
             className="w-4 h-4 text-black bg-white border border-minimal rounded focus:ring-black focus:ring-2"
           />
           <span className="font-light text-black">ต้องการเอกสารส่งผัก (ใบวางบิล/ใบเสร็จ)</span>
+        </label>
+      </div>
+
+      {/* Active Status */}
+      <div>
+        <label className="flex items-center space-x-2 text-sm">
+          <input
+            type="checkbox"
+            name="active"
+            checked={formData.active}
+            onChange={handleChange}
+            className="w-4 h-4 text-black bg-white border border-minimal rounded focus:ring-black focus:ring-2"
+          />
+          <span className="font-light text-black">ลูกค้าใช้งาน (แสดงในรายการสร้างคำสั่งซื้อ)</span>
         </label>
       </div>
 

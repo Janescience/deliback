@@ -21,6 +21,10 @@ const CustomerSchema = new mongoose.Schema({
   is_print: Boolean,
   telephone: {
     type: String
+  },
+  active: {
+    type: Boolean,
+    default: true
   }
 }, {
   timestamps: true

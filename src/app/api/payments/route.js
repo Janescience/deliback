@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Order from '@/models/Order';
-import OrderDetail from '@/models/OrderDetail';
 import Customer from '@/models/Customer';
 import Vegetable from '@/models/Vegetable';
 
@@ -10,44 +9,62 @@ export async function GET() {
   try {
     await connectDB();
 
-    // Find all orders - unpaid credit/transfer with delivery_date <= today
     const today = new Date();
     today.setHours(23, 59, 59, 999); // End of today
-    
-    const unpaidOrders = await Order.find({
-      paid_status: false,
-      delivery_date: { $lte: today }
-    }).populate('customer_id');
 
-    // Cash orders that are unpaid and delivered (delivery_date <= today)
-    const cashOrders = await Order.find({
-      'customer_id': { $exists: true },
-      paid_status: false,
-      delivery_date: { $lte: today }
-    }).populate('customer_id');
+    // OPTIMIZED: Single aggregation query to get all data at once
+    const unpaidOrdersAgg = await Order.aggregate([
+      {
+        $match: {
+          paid_status: false,
+          delivery_date: { $lte: today },
+          customer_id: { $exists: true }
+        }
+      },
+      {
+        $lookup: {
+          from: 'customers',
+          localField: 'customer_id',
+          foreignField: '_id',
+          as: 'customer_id'
+        }
+      },
+      {
+        $unwind: '$customer_id'
+      },
+      {
+        $lookup: {
+          from: 'orderdetails',
+          localField: '_id',
+          foreignField: 'order_id',
+          as: 'details',
+          pipeline: [
+            {
+              $lookup: {
+                from: 'vegetables',
+                localField: 'vegetable_id',
+                foreignField: '_id',
+                as: 'vegetable_id'
+              }
+            },
+            {
+              $unwind: '$vegetable_id'
+            }
+          ]
+        }
+      },
+      {
+        $sort: { delivery_date: -1 }
+      }
+    ]);
 
-    // Filter orders that are credit or transfer only and unpaid
-    const filteredOrders = unpaidOrders.filter(order => 
-      order.customer_id && 
+    // Separate by payment method
+    const creditTransferOrders = unpaidOrdersAgg.filter(order =>
       ['credit', 'transfer'].includes(order.customer_id.pay_method)
     );
 
-    // Filter cash orders for reconciliation (unpaid + delivered)
-    const filteredCashOrders = cashOrders.filter(order =>
-      order.customer_id &&
+    const cashOrders = unpaidOrdersAgg.filter(order =>
       order.customer_id.pay_method === 'cash'
-    );
-
-    // Get order details for each order
-    const ordersWithDetails = await Promise.all(
-      filteredOrders.map(async (order) => {
-        const orderDetails = await OrderDetail.find({ order_id: order._id })
-          .populate('vegetable_id');
-        
-        const orderObj = order.toObject();
-        orderObj.details = orderDetails.map(detail => detail.toObject());
-        return orderObj;
-      })
     );
 
     // Helper function to get billing cycle from delivery date
@@ -104,8 +121,8 @@ export async function GET() {
 
     // Group orders by customer
     const customerGroups = {};
-    
-    ordersWithDetails.forEach(order => {
+
+    creditTransferOrders.forEach(order => {
       const customerId = order.customer_id?._id?.toString();
       if (!customerId) return;
 
@@ -120,19 +137,19 @@ export async function GET() {
       }
 
       const customerGroup = customerGroups[customerId];
-      
+
       // Add overdue days for transfer orders
       if (order.customer_id.pay_method === 'transfer') {
         order.overdueDays = getOrderOverdueDays(order.delivery_date);
       }
-      
+
       customerGroup.unpaidOrders.push(order);
       customerGroup.totalUnpaid += order.total || 0;
 
       // If credit payment, also group by billing cycle
       if (order.customer_id.pay_method === 'credit') {
         const billingCycle = getBillingCycle(order.delivery_date);
-        
+
         if (!customerGroup.billingCycles[billingCycle]) {
           customerGroup.billingCycles[billingCycle] = {
             cycle: billingCycle,
@@ -140,7 +157,7 @@ export async function GET() {
             total: 0
           };
         }
-        
+
         customerGroup.billingCycles[billingCycle].orders.push(order);
         customerGroup.billingCycles[billingCycle].total += order.total || 0;
       }
@@ -166,11 +183,15 @@ export async function GET() {
         
         // Only return customer if they have overdue bills
         if (Object.keys(overdueBillingCycles).length > 0) {
+          const sortedUnpaidOrders = Object.values(overdueBillingCycles)
+            .flatMap(cycle => cycle.orders)
+            .sort((a, b) => new Date(b.delivery_date) - new Date(a.delivery_date));
+
           return {
             ...customerGroup,
             billingCycles: overdueBillingCycles,
             totalUnpaid: overdueTotal,
-            unpaidOrders: Object.values(overdueBillingCycles).flatMap(cycle => cycle.orders)
+            unpaidOrders: sortedUnpaidOrders
           };
         }
         return null;
@@ -180,23 +201,17 @@ export async function GET() {
       
     const transferCustomers = Object.values(customerGroups)
       .filter(c => c.payMethod === 'transfer')
+      .map(customerGroup => ({
+        ...customerGroup,
+        unpaidOrders: customerGroup.unpaidOrders.sort((a, b) =>
+          new Date(b.delivery_date) - new Date(a.delivery_date)
+        )
+      }))
       .sort((a, b) => b.totalUnpaid - a.totalUnpaid);
 
-    // Get order details for cash orders too
-    const cashOrdersWithDetails = await Promise.all(
-      filteredCashOrders.map(async (order) => {
-        const orderDetails = await OrderDetail.find({ order_id: order._id })
-          .populate('vegetable_id');
-        
-        const orderObj = order.toObject();
-        orderObj.details = orderDetails.map(detail => detail.toObject());
-        return orderObj;
-      })
-    );
-
-    // Group cash orders by customer (similar to credit/transfer)
+    // Group cash orders by customer (no additional queries needed)
     const cashGroups = {};
-    cashOrdersWithDetails.forEach(order => {
+    cashOrders.forEach(order => {
       const customerId = order.customer_id?._id?.toString();
       if (!customerId) return;
 
@@ -214,6 +229,12 @@ export async function GET() {
     });
 
     const cashCustomers = Object.values(cashGroups)
+      .map(customerGroup => ({
+        ...customerGroup,
+        orders: customerGroup.orders.sort((a, b) =>
+          new Date(b.delivery_date) - new Date(a.delivery_date)
+        )
+      }))
       .sort((a, b) => b.totalCash - a.totalCash);
 
     return NextResponse.json({ 
@@ -235,7 +256,7 @@ export async function PUT(request) {
   try {
     await connectDB();
     
-    const { orderIds, customerId } = await request.json();
+    const { orderIds } = await request.json();
 
     if (!orderIds || !Array.isArray(orderIds)) {
       return NextResponse.json(

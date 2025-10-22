@@ -38,15 +38,78 @@ export default function PaymentsPage() {
 
   const handlePaymentUpdate = async (orderIds, customerId = null) => {
     try {
-      await axios.put('/api/payments', { 
-        orderIds: Array.isArray(orderIds) ? orderIds : [orderIds],
-        customerId 
+      const orderIdsArray = Array.isArray(orderIds) ? orderIds : [orderIds];
+
+      await axios.put('/api/payments', {
+        orderIds: orderIdsArray,
+        customerId
       });
+
       toast.success('อัปเดตสถานะการชำระเงินสำเร็จ');
-      fetchPaymentData();
+
+      // Remove paid orders from state instead of fetching all data
+      removePaidOrdersFromState(orderIdsArray);
+
     } catch (error) {
       toast.error('ไม่สามารถอัปเดตสถานะการชำระเงินได้');
     }
+  };
+
+  const removePaidOrdersFromState = (paidOrderIds) => {
+    // Helper function to remove orders from customer data
+    const removeOrdersFromCustomer = (customers) => {
+      return customers.map(customerData => {
+        const filteredOrders = customerData.unpaidOrders?.filter(
+          order => !paidOrderIds.includes(order._id)
+        ) || [];
+
+        // For cash customers, filter orders array
+        const filteredCashOrders = customerData.orders?.filter(
+          order => !paidOrderIds.includes(order._id)
+        ) || [];
+
+        // For credit customers, also update billing cycles
+        const updatedBillingCycles = {};
+        if (customerData.billingCycles) {
+          Object.keys(customerData.billingCycles).forEach(cycle => {
+            const cycleOrders = customerData.billingCycles[cycle].orders.filter(
+              order => !paidOrderIds.includes(order._id)
+            );
+            if (cycleOrders.length > 0) {
+              updatedBillingCycles[cycle] = {
+                ...customerData.billingCycles[cycle],
+                orders: cycleOrders,
+                total: cycleOrders.reduce((sum, order) => sum + (order.total || 0), 0)
+              };
+            }
+          });
+        }
+
+        // Calculate new total
+        const newTotal = filteredOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+        const newCashTotal = filteredCashOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+
+        // Return updated customer data
+        return {
+          ...customerData,
+          unpaidOrders: filteredOrders,
+          orders: filteredCashOrders,
+          billingCycles: updatedBillingCycles,
+          totalUnpaid: newTotal,
+          totalCash: newCashTotal
+        };
+      }).filter(customerData => {
+        // Remove customers with no remaining unpaid orders
+        return (customerData.unpaidOrders?.length > 0) ||
+               (customerData.orders?.length > 0) ||
+               (Object.keys(customerData.billingCycles || {}).length > 0);
+      });
+    };
+
+    // Update all customer states
+    setCreditCustomers(prevCustomers => removeOrdersFromCustomer(prevCustomers));
+    setTransferCustomers(prevCustomers => removeOrdersFromCustomer(prevCustomers));
+    setCashCustomers(prevCustomers => removeOrdersFromCustomer(prevCustomers));
   };
 
   const toggleSection = (section) => {
@@ -290,6 +353,7 @@ export default function PaymentsPage() {
                   <PaymentTable
                     customers={getFilteredCustomers('credit')}
                     onPaymentUpdate={handlePaymentUpdate}
+                    key={`credit-${creditCustomers.length}`}
                   />
                 </div>
               )}
@@ -330,6 +394,7 @@ export default function PaymentsPage() {
                   <PaymentTable
                     customers={getFilteredCustomers('transfer')}
                     onPaymentUpdate={handlePaymentUpdate}
+                    key={`transfer-${transferCustomers.length}`}
                   />
                 </div>
               )}

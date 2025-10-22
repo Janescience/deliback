@@ -4,7 +4,7 @@ import Avatar from '../Avatar';
 import { Check, X, Edit2, Trash2,PrinterCheck } from 'lucide-react';
 import { format, differenceInDays, differenceInMonths, differenceInYears } from 'date-fns';
 
-export default function CustomerTable({ customers, onEdit, onDelete, selectedCustomers, onCustomerSelection, onSelectAll }) {
+export default function CustomerTable({ customers, onEdit, onDelete, selectedCustomers, onCustomerSelection, onSelectAll, onToggleActive }) {
   // Sort customers by latest order date ascending (oldest first)
   const sortedCustomers = customers.slice().sort((a, b) => {
     const dateA = a.latest_order_date ? new Date(a.latest_order_date) : new Date(0);
@@ -160,6 +160,11 @@ export default function CustomerTable({ customers, onEdit, onDelete, selectedCus
                   {customer.is_print && (
                     <PrinterCheck size={14} className="text-black" />
                   )}
+                  {customer.active !== false ? (
+                    <span className="px-1 py-0.5 bg-green-100 text-green-800 text-xs rounded-full">ใช้งาน</span>
+                  ) : (
+                    <span className="px-1 py-0.5 bg-red-100 text-red-800 text-xs rounded-full">ปิด</span>
+                  )}
                 </div>
                 <div className="text-gray-600 text-xs">
                   {formatRelativeDate(customer.latest_order_date).replace('ก่อน', '').replace('วันนี้', 'วันนี้')}
@@ -222,6 +227,7 @@ export default function CustomerTable({ customers, onEdit, onDelete, selectedCus
                 <th className="px-3 py-3 text-left text-sm font-light whitespace-nowrap w-[200px]">บริษัท</th>
                 <th className="px-3 py-3 text-left text-sm font-light whitespace-nowrap w-[100px]">วิธีชำระเงิน</th>
                 <th className="px-3 py-3 text-center text-sm font-light whitespace-nowrap w-[100px]">พิมพ์เอกสาร</th>
+                <th className="px-3 py-3 text-center text-sm font-light whitespace-nowrap w-[80px]">สถานะ</th>
                 <th className="px-3 py-3 text-left text-sm font-light whitespace-nowrap w-[120px]">เลขภาษี</th>
                 <th className="px-3 py-3 text-center text-sm font-light whitespace-nowrap w-[100px]">สั่งซื้อล่าสุด</th>
                 <th className="px-3 py-3 text-center text-sm font-light whitespace-nowrap w-[100px]">การจัดการ</th>
@@ -263,6 +269,21 @@ export default function CustomerTable({ customers, onEdit, onDelete, selectedCus
                         <Check size={14} className="text-green-700" /> :
                         <X size={14} className="text-black" />
                       }
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 text-center">
+                    <div className="whitespace-nowrap flex justify-center">
+                      <button
+                        onClick={() => onToggleActive?.(customer._id, customer.active !== false)}
+                        className={`px-2 py-1 text-xs rounded-full transition-colors hover:opacity-80 ${
+                          customer.active !== false
+                            ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                            : 'bg-red-100 text-red-800 hover:bg-red-200'
+                        }`}
+                        title="คลิกเพื่อเปลี่ยนสถานะ"
+                      >
+                        {customer.active !== false ? 'ใช้งาน' : 'ปิดใช้งาน'}
+                      </button>
                     </div>
                   </td>
                   <td className="px-3 py-3 text-black">

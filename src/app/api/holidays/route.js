@@ -11,7 +11,23 @@ export async function GET(request) {
     let holidays = await Holiday.find({})
       .sort({ day_of_week: 1 })
       .lean();
-    
+
+    // Auto-initialize if no data exists
+    if (holidays.length === 0) {
+      const defaultHolidays = [
+        { day_of_week: 0, day_name: 'อาทิตย์', is_holiday: true },
+        { day_of_week: 1, day_name: 'จันทร์', is_holiday: false },
+        { day_of_week: 2, day_name: 'อังคาร', is_holiday: false },
+        { day_of_week: 3, day_name: 'พุธ', is_holiday: false },
+        { day_of_week: 4, day_name: 'พฤหัสบดี', is_holiday: false },
+        { day_of_week: 5, day_name: 'ศุกร์', is_holiday: false },
+        { day_of_week: 6, day_name: 'เสาร์', is_holiday: true }
+      ];
+
+      await Holiday.insertMany(defaultHolidays);
+      holidays = await Holiday.find({}).sort({ day_of_week: 1 }).lean();
+    }
+
     return NextResponse.json({
       holidays,
       total: holidays.length

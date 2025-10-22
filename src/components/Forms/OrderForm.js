@@ -81,7 +81,9 @@ export default function OrderForm({ order, onSubmit, onCancel }) {
   const fetchCustomers = async () => {
     try {
       const response = await axios.get('/api/customers');
-      setCustomers(response.data);
+      // Filter only active customers for order creation
+      const activeCustomers = response.data.filter(customer => customer.active !== false);
+      setCustomers(activeCustomers);
     } catch (error) {
       console.error('Failed to fetch customers');
     }
