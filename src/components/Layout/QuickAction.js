@@ -34,7 +34,7 @@ export default function QuickAction() {
 
   const fetchTodayOrdersSummary = async () => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Bangkok' });
       const response = await axios.get(`/api/orders?delivery_date_from=${today}&delivery_date_to=${today}`);
       const todayOrders = response.data.orders;
 
