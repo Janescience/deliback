@@ -64,6 +64,11 @@ export async function GET(request) {
         $unwind: '$customer'
       },
       {
+        $match: {
+          'customer.active': { $ne: false } // Only include active customers
+        }
+      },
+      {
         $group: {
           _id: '$customer_id',
           customerName: { $first: '$customer.name' },
@@ -230,6 +235,11 @@ export async function GET(request) {
           $unwind: '$vegetable'
         },
         {
+          $match: {
+            'vegetable.status': { $ne: 'discontinued' } // Only include active vegetables
+          }
+        },
+        {
           $group: {
             _id: {
               customer_id: '$customer_id',
@@ -387,6 +397,22 @@ export async function GET(request) {
         }
       },
       {
+        $lookup: {
+          from: 'customers',
+          localField: 'customer_id',
+          foreignField: '_id',
+          as: 'customer'
+        }
+      },
+      {
+        $unwind: '$customer'
+      },
+      {
+        $match: {
+          'customer.active': { $ne: false } // Only include active customers
+        }
+      },
+      {
         $addFields: {
           dayOfWeek: { $dayOfWeek: '$delivery_date' }
         }
@@ -417,6 +443,11 @@ export async function GET(request) {
       },
       {
         $unwind: '$vegetable'
+      },
+      {
+        $match: {
+          'vegetable.status': { $ne: 'discontinued' } // Only include active vegetables
+        }
       },
       {
         $group: {

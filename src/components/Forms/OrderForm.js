@@ -83,7 +83,22 @@ export default function OrderForm({ order, onSubmit, onCancel }) {
       const response = await axios.get('/api/customers');
       // Filter only active customers for order creation
       const activeCustomers = response.data.filter(customer => customer.active !== false);
-      setCustomers(activeCustomers);
+
+      // Sort by latest order date (newest first), then by name
+      const sortedCustomers = activeCustomers.sort((a, b) => {
+        const dateA = a.latest_order_date ? new Date(a.latest_order_date) : new Date(0);
+        const dateB = b.latest_order_date ? new Date(b.latest_order_date) : new Date(0);
+
+        // If dates are different, sort by date (newest first)
+        if (dateA.getTime() !== dateB.getTime()) {
+          return dateB - dateA;
+        }
+
+        // If dates are same, sort by name
+        return a.name.localeCompare(b.name, 'th');
+      });
+
+      setCustomers(sortedCustomers);
     } catch (error) {
       console.error('Failed to fetch customers');
     }

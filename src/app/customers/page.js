@@ -111,6 +111,28 @@ export default function CustomersPage() {
     setSearchTerm(e.target.value);
   };
 
+  const handleToggleActive = async (customerId, currentActive) => {
+    try {
+      await axios.put('/api/customers', {
+        id: customerId,
+        active: !currentActive
+      });
+
+      // Update local state instead of fetching all data
+      setCustomers(prevCustomers =>
+        prevCustomers.map(customer =>
+          customer._id === customerId
+            ? { ...customer, active: !currentActive }
+            : customer
+        )
+      );
+
+      toast.success(currentActive ? 'ปิดใช้งานลูกค้าแล้ว' : 'เปิดใช้งานลูกค้าแล้ว');
+    } catch (error) {
+      toast.error('ไม่สามารถเปลี่ยนสถานะลูกค้าได้');
+    }
+  };
+
   return (
     <>
       {/* Mobile Fixed Header */}
@@ -197,6 +219,7 @@ export default function CustomersPage() {
             selectedCustomers={selectedCustomers}
             onCustomerSelection={handleCustomerSelection}
             onSelectAll={handleSelectAll}
+            onToggleActive={handleToggleActive}
           />
         )}
       </div>

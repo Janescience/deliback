@@ -9,15 +9,20 @@ export async function GET() {
   try {
     await connectDB();
 
+    // Use Thailand timezone consistently
     const today = new Date();
-    today.setHours(23, 59, 59, 999); // End of today
+    const thailandTime = new Date(today.toLocaleString("en-US", { timeZone: "Asia/Bangkok" }));
+    thailandTime.setHours(23, 59, 59, 999); // End of today in Thailand time
+
+    console.log(`[PAYMENTS DEBUG] Server time: ${today.toISOString()}`);
+    console.log(`[PAYMENTS DEBUG] Thailand time: ${thailandTime.toISOString()}`);
 
     // OPTIMIZED: Single aggregation query to get all data at once
     const unpaidOrdersAgg = await Order.aggregate([
       {
         $match: {
           paid_status: false,
-          delivery_date: { $lte: today },
+          delivery_date: { $lte: thailandTime },
           customer_id: { $exists: true }
         }
       },
@@ -91,7 +96,7 @@ export async function GET() {
       const billDueDate = new Date(year, month - 1, 22); // 22nd of billing month
       billDueDate.setHours(23, 59, 59, 999); // End of 22nd
       
-      return today > billDueDate;
+      return thailandTime > billDueDate;
     };
 
     // Helper function to calculate overdue days for billing cycle
@@ -100,9 +105,9 @@ export async function GET() {
       const billDueDate = new Date(year, month - 1, 22); // 22nd of billing month
       billDueDate.setHours(23, 59, 59, 999); // End of 22nd
       
-      if (today <= billDueDate) return 0;
-      
-      const diffTime = today - billDueDate;
+      if (thailandTime <= billDueDate) return 0;
+
+      const diffTime = thailandTime - billDueDate;
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       return diffDays;
     };
@@ -112,9 +117,9 @@ export async function GET() {
       const delivery = new Date(deliveryDate);
       delivery.setHours(23, 59, 59, 999); // End of delivery date
       
-      if (today <= delivery) return 0;
-      
-      const diffTime = today - delivery;
+      if (thailandTime <= delivery) return 0;
+
+      const diffTime = thailandTime - delivery;
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       return diffDays;
     };
@@ -164,15 +169,20 @@ export async function GET() {
     });
 
     // Convert to arrays and filter credit customers to show only overdue bills
-    const creditCustomers = Object.values(customerGroups)
-      .filter(c => c.payMethod === 'credit')
+    const allCreditCustomers = Object.values(customerGroups).filter(c => c.payMethod === 'credit');
+    console.log(`[PAYMENTS DEBUG] Found ${allCreditCustomers.length} credit customers total`);
+
+    const creditCustomers = allCreditCustomers
       .map(customerGroup => {
         // Filter billing cycles to show only overdue ones
         const overdueBillingCycles = {};
         let overdueTotal = 0;
         
         Object.keys(customerGroup.billingCycles).forEach(cycle => {
-          if (isBillingCycleOverdue(cycle)) {
+          const isOverdue = isBillingCycleOverdue(cycle);
+          console.log(`[PAYMENTS DEBUG] ${customerGroup.customer.name} - Cycle ${cycle}: ${isOverdue ? 'OVERDUE' : 'NOT OVERDUE'}`);
+
+          if (isOverdue) {
             overdueBillingCycles[cycle] = {
               ...customerGroup.billingCycles[cycle],
               overdueDays: getOverdueDays(cycle)
@@ -182,6 +192,8 @@ export async function GET() {
         });
         
         // Only return customer if they have overdue bills
+        console.log(`[PAYMENTS DEBUG] ${customerGroup.customer.name} - Overdue cycles: ${Object.keys(overdueBillingCycles).length}`);
+
         if (Object.keys(overdueBillingCycles).length > 0) {
           const sortedUnpaidOrders = Object.values(overdueBillingCycles)
             .flatMap(cycle => cycle.orders)
@@ -198,6 +210,8 @@ export async function GET() {
       })
       .filter(c => c !== null)
       .sort((a, b) => b.totalUnpaid - a.totalUnpaid);
+
+    console.log(`[PAYMENTS DEBUG] Final credit customers after filtering: ${creditCustomers.length}`);
       
     const transferCustomers = Object.values(customerGroups)
       .filter(c => c.payMethod === 'transfer')

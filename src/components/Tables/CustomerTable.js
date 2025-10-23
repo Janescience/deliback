@@ -34,6 +34,8 @@ export default function CustomerTable({ customers, onEdit, onDelete, selectedCus
 
   // Calculate summary stats
   const totalCustomers = customers.length;
+  const activeCustomers = customers.filter(c => c.active !== false).length;
+  const inactiveCustomers = customers.filter(c => c.active === false).length;
   const cashCustomers = customers.filter(c => c.pay_method === 'cash').length;
   const creditCustomers = customers.filter(c => c.pay_method === 'credit').length;
   const transferCustomers = customers.filter(c => c.pay_method === 'transfer').length;
@@ -97,6 +99,14 @@ export default function CustomerTable({ customers, onEdit, onDelete, selectedCus
                   <strong className="">{totalCustomers}</strong> ลูกค้า
                 </span>
                 <span className="text-black">
+                  ใช้งาน <strong className="text-green-600">{activeCustomers}</strong> ราย
+                </span>
+                {inactiveCustomers > 0 && (
+                  <span className="text-black">
+                    ปิดใช้งาน <strong className="text-red-600">{inactiveCustomers}</strong> ราย
+                  </span>
+                )}
+                <span className="text-black">
                   พิมพ์เอกสาร <strong className="">{printCustomers}</strong> ราย
                 </span>
                 <span className="text-black">
@@ -122,9 +132,12 @@ export default function CustomerTable({ customers, onEdit, onDelete, selectedCus
             <div className="lg:hidden">
               <div className="font-light text-center">
                 <div className="flex justify-between items-center">
-                  <div className="flex space-x-1">
+                  <div className="flex space-x-2">
                     <span>{totalCustomers} ลูกค้า</span>
-                    <span>พิมพ์เอกสาร {printCustomers} ราย</span>
+                    <span className="text-green-600">ใช้งาน {activeCustomers}</span>
+                    {inactiveCustomers > 0 && (
+                      <span className="text-red-600">ปิด {inactiveCustomers}</span>
+                    )}
                   </div>
                   <div className="flex items-center space-x-1">
                     <span>สั่งซื้อเดือนนี้ {recentCustomers} ราย</span>
@@ -160,11 +173,17 @@ export default function CustomerTable({ customers, onEdit, onDelete, selectedCus
                   {customer.is_print && (
                     <PrinterCheck size={14} className="text-black" />
                   )}
-                  {customer.active !== false ? (
-                    <span className="px-1 py-0.5 bg-green-100 text-green-800 text-xs rounded-full">ใช้งาน</span>
-                  ) : (
-                    <span className="px-1 py-0.5 bg-red-100 text-red-800 text-xs rounded-full">ปิด</span>
-                  )}
+                  <button
+                    onClick={() => onToggleActive?.(customer._id, customer.active !== false)}
+                    className={`px-1 py-0.5 text-xs rounded-full transition-colors hover:opacity-80 ${
+                      customer.active !== false
+                        ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                        : 'bg-red-100 text-red-800 hover:bg-red-200'
+                    }`}
+                    title="คลิกเพื่อเปลี่ยนสถานะ"
+                  >
+                    {customer.active !== false ? 'ใช้งาน' : 'ปิด'}
+                  </button>
                 </div>
                 <div className="text-gray-600 text-xs">
                   {formatRelativeDate(customer.latest_order_date).replace('ก่อน', '').replace('วันนี้', 'วันนี้')}

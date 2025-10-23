@@ -111,16 +111,27 @@ export default function VegetablesPage() {
     // Cycle through status: available -> out_of_stock -> discontinued -> available
     const statusCycle = {
       'available': 'out_of_stock',
-      'out_of_stock': 'discontinued', 
+      'out_of_stock': 'discontinued',
       'discontinued': 'available'
     };
-    
+
     const newStatus = statusCycle[currentStatus] || 'available';
-    
+
     try {
       await axios.put('/api/vegetables', { id, status: newStatus });
+
+      // Update local state instead of fetching all data
+      const updateVegetableStatus = (vegetables) =>
+        vegetables.map(vegetable =>
+          vegetable._id === id
+            ? { ...vegetable, status: newStatus }
+            : vegetable
+        );
+
+      setNormalVegetables(prev => updateVegetableStatus(prev));
+      setRevenueVegetables(prev => updateVegetableStatus(prev));
+
       toast.success('อัปเดตสถานะสำเร็จ');
-      fetchVegetables();
     } catch (error) {
       toast.error('ไม่สามารถอัปเดตสถานะได้');
     }
