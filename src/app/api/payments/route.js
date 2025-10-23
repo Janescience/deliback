@@ -14,8 +14,6 @@ export async function GET() {
     const thailandTime = new Date(today.toLocaleString("en-US", { timeZone: "Asia/Bangkok" }));
     thailandTime.setHours(23, 59, 59, 999); // End of today in Thailand time
 
-    console.log(`[PAYMENTS DEBUG] Server time: ${today.toISOString()}`);
-    console.log(`[PAYMENTS DEBUG] Thailand time: ${thailandTime.toISOString()}`);
 
     // OPTIMIZED: Single aggregation query to get all data at once
     const unpaidOrdersAgg = await Order.aggregate([
@@ -169,20 +167,15 @@ export async function GET() {
     });
 
     // Convert to arrays and filter credit customers to show only overdue bills
-    const allCreditCustomers = Object.values(customerGroups).filter(c => c.payMethod === 'credit');
-    console.log(`[PAYMENTS DEBUG] Found ${allCreditCustomers.length} credit customers total`);
-
-    const creditCustomers = allCreditCustomers
+    const creditCustomers = Object.values(customerGroups)
+      .filter(c => c.payMethod === 'credit')
       .map(customerGroup => {
         // Filter billing cycles to show only overdue ones
         const overdueBillingCycles = {};
         let overdueTotal = 0;
         
         Object.keys(customerGroup.billingCycles).forEach(cycle => {
-          const isOverdue = isBillingCycleOverdue(cycle);
-          console.log(`[PAYMENTS DEBUG] ${customerGroup.customer.name} - Cycle ${cycle}: ${isOverdue ? 'OVERDUE' : 'NOT OVERDUE'}`);
-
-          if (isOverdue) {
+          if (isBillingCycleOverdue(cycle)) {
             overdueBillingCycles[cycle] = {
               ...customerGroup.billingCycles[cycle],
               overdueDays: getOverdueDays(cycle)
@@ -192,8 +185,6 @@ export async function GET() {
         });
         
         // Only return customer if they have overdue bills
-        console.log(`[PAYMENTS DEBUG] ${customerGroup.customer.name} - Overdue cycles: ${Object.keys(overdueBillingCycles).length}`);
-
         if (Object.keys(overdueBillingCycles).length > 0) {
           const sortedUnpaidOrders = Object.values(overdueBillingCycles)
             .flatMap(cycle => cycle.orders)
@@ -210,8 +201,6 @@ export async function GET() {
       })
       .filter(c => c !== null)
       .sort((a, b) => b.totalUnpaid - a.totalUnpaid);
-
-    console.log(`[PAYMENTS DEBUG] Final credit customers after filtering: ${creditCustomers.length}`);
       
     const transferCustomers = Object.values(customerGroups)
       .filter(c => c.payMethod === 'transfer')
