@@ -24,17 +24,17 @@ export default function PaymentTable({ customers, onPaymentUpdate }) {
   const handleCustomerPayment = (customerId) => {
     const customer = customers.find(c => c.customer._id === customerId);
     if (!customer) return;
-    
+
     const orderIds = customer.unpaidOrders.map(order => order._id);
-    onPaymentUpdate(orderIds, customerId);
+    onPaymentUpdate(orderIds, customerId, 'all');
   };
 
   const handleBillingCyclePayment = (customerId, billingCycle) => {
     const customer = customers.find(c => c.customer._id === customerId);
     if (!customer || !customer.billingCycles[billingCycle]) return;
-    
+
     const orderIds = customer.billingCycles[billingCycle].orders.map(order => order._id);
-    onPaymentUpdate(orderIds, customerId);
+    onPaymentUpdate(orderIds, customerId, 'cycle');
   };
 
   const formatBillingCycle = (cycle) => {
@@ -64,7 +64,7 @@ export default function PaymentTable({ customers, onPaymentUpdate }) {
       return;
     }
 
-    onPaymentUpdate(selectedOrderIds, customerId);
+    onPaymentUpdate(selectedOrderIds, customerId, 'selected');
     
     // Clear selections after payment
     const clearedSelections = { ...selectedOrders };

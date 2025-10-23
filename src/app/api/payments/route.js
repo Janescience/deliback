@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import Order from '@/models/Order';
 import Customer from '@/models/Customer';
 import Vegetable from '@/models/Vegetable';
+import PaymentLog from '@/models/PaymentLog';
 
 // GET - Fetch unpaid orders grouped by customer
 export async function GET() {
@@ -254,12 +255,30 @@ export async function GET() {
   }
 }
 
+// Helper function to get billing cycle from delivery date
+const getBillingCycle = (deliveryDate) => {
+  const date = new Date(deliveryDate);
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1; // 0-based to 1-based
+  const day = date.getDate();
+
+  if (day >= 15) {
+    // If day is 15 or later, billing cycle is next month
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const nextYear = month === 12 ? year + 1 : year;
+    return `${nextYear}-${nextMonth.toString().padStart(2, '0')}`;
+  } else {
+    // If day is before 15, billing cycle is current month
+    return `${year}-${month.toString().padStart(2, '0')}`;
+  }
+};
+
 // PUT - Update payment status for orders
 export async function PUT(request) {
   try {
     await connectDB();
-    
-    const { orderIds } = await request.json();
+
+    const { orderIds, actionType = 'selected' } = await request.json();
 
     if (!orderIds || !Array.isArray(orderIds)) {
       return NextResponse.json(
@@ -268,23 +287,74 @@ export async function PUT(request) {
       );
     }
 
+    // Get current state of orders before updating
+    const ordersBeforeUpdate = await Order.find({ _id: { $in: orderIds } })
+      .populate('customer_id')
+      .lean();
+
+    if (ordersBeforeUpdate.length === 0) {
+      return NextResponse.json(
+        { error: 'ไม่พบรายการคำสั่งซื้อที่ระบุ' },
+        { status: 404 }
+      );
+    }
+
+    // Calculate total amount and get customer info
+    const totalAmount = ordersBeforeUpdate.reduce((sum, order) => sum + (order.total || 0), 0);
+    const customerId = ordersBeforeUpdate[0].customer_id._id;
+    const billingCycle = ordersBeforeUpdate[0].customer_id.pay_method === 'credit'
+      ? getBillingCycle(ordersBeforeUpdate[0].delivery_date)
+      : null;
+
+    // Store previous state for undo
+    const previousState = ordersBeforeUpdate.map(order => ({
+      order_id: order._id,
+      paid_status: order.paid_status,
+      paid_date: order.paid_date
+    }));
+
     // Update payment status
+    const now = new Date();
     const result = await Order.updateMany(
       { _id: { $in: orderIds } },
-      { 
-        $set: { 
+      {
+        $set: {
           paid_status: true,
-          updatedAt: new Date()
-        } 
+          paid_date: now,
+          updatedAt: now
+        }
       }
     );
 
-    return NextResponse.json({ 
-      success: true, 
+    // Create new state for log
+    const newState = orderIds.map(orderId => ({
+      order_id: orderId,
+      paid_status: true,
+      paid_date: now
+    }));
+
+    // Create payment log
+    const paymentLog = await PaymentLog.create({
+      action: 'mark_paid',
+      action_type: actionType,
+      order_ids: orderIds,
+      customer_id: customerId,
+      previous_state: previousState,
+      new_state: newState,
+      total_amount: totalAmount,
+      billing_cycle: billingCycle,
+      user: 'admin', // TODO: Get from session/auth
+      user_agent: request.headers.get('user-agent'),
+      ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
+    });
+
+    return NextResponse.json({
+      success: true,
       updatedCount: result.modifiedCount,
+      logId: paymentLog._id,
       message: `อัปเดตสถานะการชำระเงินสำเร็จ ${result.modifiedCount} รายการ`
     });
-    
+
   } catch (error) {
     console.error('Error updating payment status:', error);
     return NextResponse.json(

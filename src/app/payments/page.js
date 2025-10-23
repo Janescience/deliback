@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import Link from 'next/link';
+import { History } from 'lucide-react';
 import PaymentTable from '@/components/Tables/PaymentTable';
 import { ChevronUp, ChevronDown, CreditCard, ArrowRightLeft, Calendar, Users, TrendingDown } from 'lucide-react';
 
@@ -36,13 +38,30 @@ export default function PaymentsPage() {
     }
   };
 
-  const handlePaymentUpdate = async (orderIds, customerId = null) => {
+  const handlePaymentUpdate = async (orderIds, customerId = null, actionType = 'selected') => {
     try {
       const orderIdsArray = Array.isArray(orderIds) ? orderIds : [orderIds];
 
+      // Create confirmation message based on action type
+      let confirmMessage = '';
+      if (actionType === 'all') {
+        confirmMessage = 'คุณต้องการชำระหนี้ทั้งหมดของลูกค้านี้ใช่หรือไม่?';
+      } else if (actionType === 'cycle') {
+        confirmMessage = 'คุณต้องการชำระหนี้รอบบิลนี้ใช่หรือไม่?';
+      } else {
+        confirmMessage = `คุณต้องการชำระรายการที่เลือก ${orderIdsArray.length} รายการใช่หรือไม่?`;
+      }
+
+      // Show confirmation dialog
+      const confirmed = window.confirm(confirmMessage);
+      if (!confirmed) {
+        return; // User cancelled
+      }
+
       await axios.put('/api/payments', {
         orderIds: orderIdsArray,
-        customerId
+        customerId,
+        actionType
       });
 
       toast.success('อัปเดตสถานะการชำระเงินสำเร็จ');
@@ -207,12 +226,31 @@ export default function PaymentsPage() {
     <>
       {/* Mobile Fixed Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 bg-white px-4 py-3 z-40 border-b border-gray-200">
-        <div className="flex items-center">
+        <div className="flex items-center justify-between w-full">
           <h1 className="text-xl font-extralight text-black">หนี้คงค้าง</h1>
+          <Link
+            href="/payments/history"
+            className="flex items-center gap-2 px-3 py-1 text-sm text-gray-600 hover:text-black transition-colors"
+          >
+            <History size={16} />
+            ประวัติ
+          </Link>
         </div>
       </div>
 
       <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 overflow-hidden">
+        {/* Desktop Header */}
+        <div className="hidden lg:flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-light text-black">หนี้คงค้าง</h1>
+          <Link
+            href="/payments/history"
+            className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-black border border-gray-200 rounded hover:border-gray-300 transition-colors"
+          >
+            <History size={18} />
+            ประวัติการชำระเงิน
+          </Link>
+        </div>
+
         {loading ? (
           <div className="text-center py-8 text-gray-500">กำลังโหลด...</div>
         ) : (

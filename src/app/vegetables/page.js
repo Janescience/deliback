@@ -184,7 +184,7 @@ export default function VegetablesPage() {
       {/* Mobile Fixed Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 bg-white px-4 py-3 z-40 border-b border-gray-300">
         <div className="flex items-center">
-          <h1 className="text-xl font-light text-black">จัดการผัก</h1>
+          <h1 className="text-xl font-light text-black">จัดการสินค้า</h1>
         </div>
       </div>
 
@@ -200,7 +200,7 @@ export default function VegetablesPage() {
       <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 overflow-hidden">
         {/* Desktop Header */}
         <div className="hidden lg:flex justify-between items-center mb-4 sm:mb-6">
-          <h1 className="text-2xl sm:text-3xl font-light text-black">จัดการผัก</h1>
+          <h1 className="text-2xl sm:text-3xl font-light text-black">จัดการสินค้า</h1>
           <Button onClick={handleCreate} size="md">
             + ผัก
           </Button>
