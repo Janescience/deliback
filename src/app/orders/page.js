@@ -360,7 +360,7 @@ export default function OrdersPage() {
         <Plus size={20} />
       </button>
 
-      <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 overflow-hidden">
+      <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 overflow-hidden pb-32 lg:pb-4">
         {/* Desktop Header */}
         <div className="hidden lg:flex justify-between items-center mb-4 sm:mb-6">
           <h1 className="text-2xl sm:text-3xl font-light text-black">จัดการคำสั่งซื้อ</h1>
