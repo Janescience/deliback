@@ -83,7 +83,8 @@ export async function POST(request) {
           companyName: customer.company_name || '',
           taxId: customer.tax_id || '',
           address: customer.address || '',
-          telephone: customer.telephone || ''
+          telephone: customer.telephone || '',
+          pay_method: customer.pay_method || payMethod
         },
         items,
         totalAmount,

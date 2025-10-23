@@ -4,9 +4,47 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FileText, Download, Eye, Calendar, Users, Archive, X, Printer, CreditCard, AlertCircle } from 'lucide-react';
 import { getThailandTodayString } from '@/lib/thailand-time-client';
+import { generateDocumentData, DocumentTemplate } from '@/lib/documentTemplate';
+
+// Company settings state (will be loaded from API)
+const DEFAULT_COMPANY_SETTINGS = {
+  companyName: 'Ordix',
+  address: {
+    line1: '198 ม.9 บ้านห้วยลาดอาย ต.ขุนดินเถื่อ',
+    line2: 'อ.ดูลำปี จ.ขกรรเขียว การค์โปรดแรด 30170'
+  },
+  telephone: '(+66) 095736589',
+  taxId: '34090003658912',
+  logo: {
+    url: '',
+    width: 64,
+    height: 64
+  },
+  documentSettings: {
+    creditDays: 15,
+    paymentTermsText: 'ตัดรอบวางบิลทุกวันที่ 15 ของเดือน',
+    paymentConditionText: 'รบกวนชําระเงินภายใน 7 วันหลังจากวางบิล'
+  },
+  bankSettings: {
+    bankName: 'ธนาคารกสิกรไทย',
+    accountNumber: '113-8-48085-9',
+    accountName: 'นายฮาเล็ม เจะมาริกัน',
+    transferInstructions: 'กรณีโอนชําระเงินเรียบร้อยแล้ว กรุณาส่งหลักฐานยืนยันการชําระผ่านทาง LINE'
+  },
+  templateSettings: {
+    deliveryNoteTitle: {
+      thai: 'ใบส่งสินค้า',
+      english: 'Delivery Sheet'
+    }
+  }
+};
+
 
 export default function DocumentsPage() {
   const [activeTab, setActiveTab] = useState('delivery');
+
+  // Company settings state
+  const [companySettings, setCompanySettings] = useState(DEFAULT_COMPANY_SETTINGS);
 
   // Delivery Notes Tab States
   const [selectedDate, setSelectedDate] = useState(getThailandTodayString());
@@ -23,6 +61,10 @@ export default function DocumentsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState('');
   const [billingPreviewData, setBillingPreviewData] = useState(null);
   const [showBillingPreview, setShowBillingPreview] = useState(false);
+
+  useEffect(() => {
+    fetchCompanySettings();
+  }, []);
 
   useEffect(() => {
     if (activeTab === 'delivery') {
@@ -42,6 +84,18 @@ export default function DocumentsPage() {
       fetchBillingData();
     }
   }, [selectedPeriod, activeTab]);
+
+  const fetchCompanySettings = async () => {
+    try {
+      const response = await axios.get('/api/company-settings');
+      if (response.data.success) {
+        setCompanySettings(response.data.settings);
+      }
+    } catch (error) {
+      console.error('Failed to fetch company settings:', error);
+      // Keep using default settings on error
+    }
+  };
 
   const fetchOrdersForDate = async () => {
     try {
@@ -197,7 +251,8 @@ export default function DocumentsPage() {
       setLoading(true);
 
       const response = await axios.post('/api/documents/print', {
-        documents: billingPreviewData.documents
+        documents: billingPreviewData.documents,
+        userId: 'default'
       });
 
       const htmlContent = response.data.html;
@@ -391,7 +446,8 @@ export default function DocumentsPage() {
         });
         
         const printResponse = await axios.post('/api/documents/print', {
-          documents: documentsToprint
+          documents: documentsToprint,
+          userId: 'default'
         });
         
         const htmlContent = printResponse.data.html;
@@ -470,7 +526,8 @@ export default function DocumentsPage() {
       }
       
       const response = await axios.post('/api/documents/print', {
-        documents: documentsToprint
+        documents: documentsToprint,
+        userId: 'default'
       });
       
       const htmlContent = response.data.html;
@@ -521,7 +578,8 @@ export default function DocumentsPage() {
       });
       
       const response = await axios.post('/api/documents/print', {
-        documents: documentsToprint
+        documents: documentsToprint,
+        userId: 'default'
       });
       
       const htmlContent = response.data.html;
@@ -969,14 +1027,8 @@ export default function DocumentsPage() {
               <div className="flex-1 overflow-y-auto p-4 bg-gray-100">
                 <div className="space-y-6">
                   {previewData.documents.map((doc, index) => {
-                    const dateFormat = new Date(doc.date).toLocaleDateString('th-TH');
-                    const dueDateFormat = new Date(doc.dueDate).toLocaleDateString('th-TH');
-                    const docTypeText = doc.docType === 'delivery_note' ? 'ใบส่งสินค้า' : 'ใบเสร็จ';
-                    
-                    const subtotal = doc.totalAmount;
-                    const vat = subtotal * 0.07;
-                    const netTotal = subtotal + vat;
-                    
+                    const documentData = generateDocumentData(doc, companySettings);
+
                     return (
                       <div key={index} className="bg-white border border-gray-300 rounded-lg overflow-hidden shadow-lg">
                         {/* Action buttons */}
@@ -998,174 +1050,9 @@ export default function DocumentsPage() {
                             <span className="hidden sm:inline">ดาวโหลด</span>
                           </button>
                         </div>
-                        
+
                         {/* Document Template */}
-                        <div className="p-4 font-sarabun text-xs">
-                          {/* Header */}
-                          <div className="text-right mb-4">
-                            <div className="bg-gray-600 text-white px-3 py-2 inline-block font-light text-sm">
-                              {docTypeText}<br/>Delivery Sheet
-                            </div>
-                          </div>
-                          
-                          {/* Company Header */}
-                          <div className="text-center mb-4 pb-3 border-b-2 border-black">
-                            <div className="text-lg font-light text-blue-600 mb-1">HALEM FARM</div>
-                            <div className="text-xs leading-tight">
-                              198 ม.9 บ้านห้วยลาดอาย ต.ขุนดินเถื่อ<br/>
-                              อ.ดูลำปี จ.ขกรรเขียว การค์โปรดแรด 30170<br/>
-                              โทร (+66) 095736589<br/>
-                              เลขประจำตัวผู้เสียภาษี 34090003658912
-                            </div>
-                          </div>
-                          
-                          {/* Info Table */}
-                          <table className="w-full border-2 border-black border-collapse mb-4 text-xs">
-                            <tbody>
-                              <tr>
-                                <td className="bg-gray-100 border border-black p-2 font-light text-xs w-1/4">
-                                  รหัสลูกค้า/เลขประจำตัวผู้เสียภาษี<br/>Tax ID
-                                </td>
-                                <td className="border border-black p-2 w-1/4">{doc.customer.taxId || '0305565004605'}</td>
-                                <td className="bg-gray-100 border border-black p-2 font-light text-xs w-1/4">
-                                  เลขที่ใบส่งสินค้า<br/>-
-                                </td>
-                                <td className="border border-black p-2 w-1/4">{doc.docNumber}</td>
-                              </tr>
-                              <tr>
-                                <td className="bg-gray-100 border border-black p-2 font-light text-xs">
-                                  ชื่อลูกค้า<br/>Customer
-                                </td>
-                                <td className="border border-black p-2">{doc.customer.companyName || doc.customer.name}</td>
-                                <td className="bg-gray-100 border border-black p-2 font-light text-xs">
-                                  วันที่ทำรายการ<br/>กำหนดชำระสินค้า
-                                </td>
-                                <td className="border border-black p-2">{dateFormat}<br/>{dueDateFormat}</td>
-                              </tr>
-                              <tr>
-                                <td className="bg-gray-100 border border-black p-2 font-light text-xs">
-                                  ที่อยู่<br/>Address
-                                </td>
-                                <td className="border border-black p-2" colSpan="3">{doc.customer.address || ''}</td>
-                              </tr>
-                              <tr>
-                                <td className="bg-gray-100 border border-black p-2 font-light text-xs">
-                                  โทรศัพท์/Phone<br/>อีเมล/Email
-                                </td>
-                                <td className="border border-black p-2">{doc.customer.telephone || ''}</td>
-                                <td className="border border-black p-2" colSpan="2"></td>
-                              </tr>
-                            </tbody>
-                          </table>
-                          
-                          {/* Product Table */}
-                          <table className="w-full border-2 border-black border-collapse mb-4 text-xs">
-                            <thead>
-                              <tr className="bg-gray-600 text-white">
-                                <th className="border border-black p-2 text-center text-xs font-light w-1/12">
-                                  ลำดับ<br/>Item No.
-                                </th>
-                                <th className="border border-black p-2 text-center text-xs font-light w-5/12">
-                                  ชื่อสินค้าหรือเรียเอียด<br/>Product Description
-                                </th>
-                                <th className="border border-black p-2 text-center text-xs font-light w-2/12">
-                                  จำนวน<br/>Quantity
-                                </th>
-                                <th className="border border-black p-2 text-center text-xs font-light w-2/12">
-                                  ราคาต่อหน่วย<br/>Unit Price
-                                </th>
-                                <th className="border border-black p-2 text-center text-xs font-light w-2/12">
-                                  จำนวนเงิน<br/>Amount
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {doc.items.map((item, i) => (
-                                <tr key={i}>
-                                  <td className="border border-black p-2 text-center">{i + 1}</td>
-                                  <td className="border border-black p-2">{item.name}</td>
-                                  <td className="border border-black p-2 text-center">{item.quantity.toFixed(2)}</td>
-                                  <td className="border border-black p-2 text-right">{Math.round(item.unitPrice).toFixed(2)}</td>
-                                  <td className="border border-black p-2 text-right">{Math.round(item.total).toFixed(2)}</td>
-                                </tr>
-                              ))}
-                              {Array.from({ length: Math.max(0, 8 - doc.items.length) }, (_, i) => (
-                                <tr key={`empty-${i}`}>
-                                  <td className="border border-black p-2 text-center">&nbsp;</td>
-                                  <td className="border border-black p-2">&nbsp;</td>
-                                  <td className="border border-black p-2 text-center">&nbsp;</td>
-                                  <td className="border border-black p-2 text-right">&nbsp;</td>
-                                  <td className="border border-black p-2 text-right">&nbsp;</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                          
-                          {/* Bottom Section */}
-                          <div className="flex justify-between">
-                            <div className="flex-1 pr-5">
-                              <table className="w-full border border-black border-collapse">
-                                <tbody>
-                                  <tr>
-                                    <td className="border border-black p-2 font-light">หมายเหตุ</td>
-                                    <td className="border border-black p-2">{doc.customer.name}</td>
-                                  </tr>
-                                </tbody>
-                              </table>
-                              
-                              <div className="mt-4 text-xs">
-                                <strong>ส่วนรีซีปป์เอกสารสำหรับ</strong><br/>
-                                <strong>ชำระเงิน</strong><br/>
-                                <div className="mt-2">
-                                  <strong>เครดิต</strong> &nbsp;&nbsp;&nbsp; ระบบการกินสินค้าสิน 15 ของเดือน<br/>
-                                  <strong>ภาษีมูลค่าเพิ่ม/เอกสารกำกับต่างๆสำหรับใน</strong>
-                                </div>
-                                
-                                <div className="mt-5">
-                                  <strong>การสอบสำรองเสียมค่า</strong> งานควบรเขาขำ อีก 7 วันหลังจากการเวลา
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="w-60">
-                              <table className="w-full border border-black border-collapse">
-                                <tbody>
-                                  <tr>
-                                    <td className="border border-black p-2">รวมค่าหบนด์น</td>
-                                    <td className="border border-black p-2 text-right">{Math.round(subtotal).toFixed(2)}</td>
-                                  </tr>
-                                  <tr>
-                                    <td className="border border-black p-2">ภาษีมูลค่าเพิ่ม (Vat) 7%</td>
-                                    <td className="border border-black p-2 text-right">{Math.round(vat).toFixed(2)}</td>
-                                  </tr>
-                                  <tr className="border-b-2 border-black">
-                                    <td className="border border-black p-2">ชำระเงินสุทธิสุด / Net Total</td>
-                                    <td className="border border-black p-2 text-right">{Math.round(netTotal).toFixed(2)}</td>
-                                  </tr>
-                                </tbody>
-                              </table>
-                              
-                              <table className="w-full border-collapse mt-3">
-                                <tbody>
-                                  <tr>
-                                    <td className="border border-black p-2 text-center">ผู้อนุมัติ</td>
-                                  </tr>
-                                  <tr>
-                                    <td className="border border-black p-2 text-center">ผู้ส่งสินค้า</td>
-                                  </tr>
-                                  <tr>
-                                    <td className="border border-black p-2 text-center">ผู้รับสินค้า</td>
-                                  </tr>
-                                  <tr>
-                                    <td className="border border-black p-2 text-center">
-                                      วันที่ &nbsp;&nbsp;......../......../..........
-                                    </td>
-                                  </tr>
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
-                        </div>
+                        <DocumentTemplate data={documentData} />
                       </div>
                     );
                   })}

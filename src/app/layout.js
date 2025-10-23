@@ -11,12 +11,12 @@ const kanit = Kanit({
 });
 
 export const metadata = {
-  title: 'Halem Farm - ระบบจัดการฟาร์มผัก',
-  description: 'ระบบบริหารจัดการคำสั่งซื้อและจัดส่งผักสดคุณภาพดี',
+  title: 'Ordix — Smart order operations.',
+  description: 'ระบบจัดการ Order อัจฉริยะ',
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
-      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/boxes.svg', type: 'image/svg+xml' },
     ],
     apple: [
       { url: '/apple-touch-icon.png', sizes: '180x180' },

@@ -1,4 +1,4 @@
-# Halem Farm Backend - Vercel Deployment Guide
+# Ordix Backend - Vercel Deployment Guide
 
 ## Pre-deployment Checklist
 

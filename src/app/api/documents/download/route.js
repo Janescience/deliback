@@ -307,7 +307,7 @@ function generateHTMLTemplate(document, docTypeText) {
       </div>
       
       <div class="company-header">
-        <div class="company-name">HALEM FARM</div>
+        <div class="company-name">Ordix</div>
         <div class="company-details">
           198 ม.9 บ้านห้วยลาดอาย ต.ขุนดินเถื่อ<br/>
           อ.ดูลำปี จ.ขกรรเขียว การค์โปรดแรด 30170<br/>

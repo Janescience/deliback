@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { ChartArea, ShoppingCart, Angry, User, Box, Calendar, Settings, ChevronDown, Printer, LeafyGreen } from 'lucide-react';
+import { ChartArea, ShoppingCart, Angry, User, Box, Calendar, Settings, ChevronDown, Printer, Boxes, Cog } from 'lucide-react';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -37,27 +37,32 @@ export default function Sidebar() {
   ];
 
   const settingsMenuItems = [
-    { 
-      href: '/customers', 
+    {
+      href: '/customers',
       label: 'ลูกค้า',
       icon: <User size={22} />
     },
-    { 
-      href: '/vegetables', 
+    {
+      href: '/vegetables',
       label: 'รายการสินค้า',
       icon: <Box size={22} />
     },
-    { 
-      href: '/holidays', 
+    {
+      href: '/holidays',
       label: 'วันหยุด',
       icon: <Calendar size={22} />
+    },
+    {
+      href: '/settings',
+      label: 'ตั้งค่าระบบ',
+      icon: <Cog size={22} />
     },
   ];
 
   const settingsIcon = <Settings size={22} />;
 
   // Check if current path is in settings section
-  const isInSettingsSection = ['/customers', '/vegetables', '/holidays'].includes(pathname);
+  const isInSettingsSection = ['/customers', '/vegetables', '/holidays', '/settings'].includes(pathname);
 
   return (
     <>
@@ -67,8 +72,8 @@ export default function Sidebar() {
           <div className="flex items-center h-16">
             {/* Logo - Left */}
             <div className="flex-shrink-0 flex items-center space-x-2">
-              <LeafyGreen size={28}  />
-              <h2 className="text-3xl font-light text-black">Veggie</h2>
+              <Boxes size={28}  />
+              <h2 className="text-3xl font-light text-black">Ordix</h2>
             </div>
             
             {/* Navigation - Center */}
