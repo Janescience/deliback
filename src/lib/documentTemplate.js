@@ -197,6 +197,9 @@ export const DocumentTemplate = ({ data, className = '' }) => {
             </td>
             
             <td className=" p-2 " >{document.customer.taxId || companySettings.taxId}</td>
+            <td className=" p-2 font-bold text-xs">
+              
+            </td>
             <td className=" p-2 font-bold text-xs ">
               {document.docType === 'receipt' ? 'เลขที่ใบเสร็จ' :
                document.docType === 'billing' ? 'เลขที่ใบวางบิล' :
@@ -208,7 +211,10 @@ export const DocumentTemplate = ({ data, className = '' }) => {
             <td className=" p-2 font-bold text-xs">
               ชื่อลูกค้า
             </td>
-            <td className=" p-2 " colSpan="2">{document.customer.companyName || document.customer.name}</td>
+            
+            <td className=" p-2 " colSpan="1">{document.customer.companyName || document.customer.name}</td>
+            <td className=" p-2 font-bold text-xs">
+            </td>
             <td className=" p-2 font-bold text-xs">
               วันที่ทำรายการ<br/>กำหนดชำระเงิน
             </td>
@@ -218,13 +224,15 @@ export const DocumentTemplate = ({ data, className = '' }) => {
             <td className=" p-2 font-bold text-xs">
               ที่อยู่
             </td>
-            <td className=" p-2" colSpan="3">{document.customer.address || ''}</td>
+        
+            <td className=" p-2" colSpan="2">{document.customer.address || ''}</td>
           </tr>
           <tr>
             <td className=" p-2 font-bold text-xs">
               เบอร์โทรศัพท์
             </td>
-            <td className=" p-2" colSpan="3">{document.customer.telephone || ''}</td>
+        
+            <td className=" p-2" colSpan="2">{document.customer.telephone || ''}</td>
           </tr>
         </tbody>
       </table>
@@ -274,7 +282,7 @@ export const DocumentTemplate = ({ data, className = '' }) => {
               </tr>
             )) || []
           )}
-          {Array.from({ length: Math.max(0, 8 - (document.docType === 'billing' ? (document.deliveryNotes?.length || 0) : (document.items?.length || 0))) }, (_, i) => (
+          {Array.from({ length: Math.max(0, 20 - (document.docType === 'billing' ? (document.deliveryNotes?.length || 0) : (document.items?.length || 0))) }, (_, i) => (
             <tr key={`empty-${i}`}>
               <td className="border-r border-black text-center">&nbsp;</td>
               <td className="border-r border-black ">&nbsp;</td>
@@ -451,6 +459,9 @@ export const generateDocumentHTML = (document, companySettings, isPageBreak = fa
             เลขประจำตัวผู้เสียภาษี
           </td>
           <td style="padding: 8px; width: 25%;">${document.customer.taxId || companySettings.taxId}</td>
+          <td className=" p-2 font-bold text-xs">
+              
+            </td>
           <td style="padding: 8px; font-weight: bold; font-size: 12px; width: 25%;">
             ${document.docType === 'receipt' ? 'เลขที่ใบเสร็จ' :
               document.docType === 'billing' ? 'เลขที่ใบวางบิล' :
@@ -462,7 +473,10 @@ export const generateDocumentHTML = (document, companySettings, isPageBreak = fa
           <td style="padding: 8px; font-weight: bold; font-size: 12px;">
             ชื่อลูกค้า
           </td>
-          <td style="padding: 8px;" colspan="2">${document.customer.companyName || document.customer.name}</td>
+          <td style="padding: 8px;" colspan="1">${document.customer.companyName || document.customer.name}</td>
+          <td className=" p-2 font-bold text-xs">
+              
+            </td>
           <td style="padding: 8px; font-weight: bold; font-size: 12px;">
             วันที่ทำรายการ<br/>กำหนดชำระเงิน
           </td>
@@ -472,13 +486,13 @@ export const generateDocumentHTML = (document, companySettings, isPageBreak = fa
           <td style="padding: 8px; font-weight: bold; font-size: 12px;">
             ที่อยู่
           </td>
-          <td style="padding: 8px;" colspan="3">${document.customer.address || ''}</td>
+          <td style="padding: 8px;" colspan="2">${document.customer.address || ''}</td>
         </tr>
         <tr>
           <td style="padding: 8px; font-weight: bold; font-size: 12px;">
             เบอร์โทรศัพท์
           </td>
-          <td style="padding: 8px;" colspan="3">${document.customer.telephone || ''}</td>
+          <td style="padding: 8px;" colspan="2">${document.customer.telephone || ''}</td>
         </tr>
       </tbody>
     </table>
@@ -529,7 +543,7 @@ export const generateDocumentHTML = (document, companySettings, isPageBreak = fa
           `).join('') || ''
         )}
         ${Array.from({
-          length: Math.max(0, 8 - (document.docType === 'billing' ? (document.deliveryNotes?.length || 0) : (document.items?.length || 0)))
+          length: Math.max(0, 20 - (document.docType === 'billing' ? (document.deliveryNotes?.length || 0) : (document.items?.length || 0)))
         }, () => `
           <tr>
             <td style="border-right: 1px solid #000;  text-align: center;">&nbsp;</td>
