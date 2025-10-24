@@ -9,6 +9,7 @@ import { Plus, ChevronUp, ChevronDown,PlusIcon } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
+import CustomerSelect from '@/components/ui/CustomerSelect';
 import { getThailandTodayString } from '@/lib/thailand-time-client';
 
 export default function OrdersPage() {
@@ -419,18 +420,15 @@ export default function OrdersPage() {
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
               {/* Customer */}
               <div>
-                <Select
+                <CustomerSelect
                   label="ลูกค้า"
                   value={searchCriteria.customer_id}
                   onChange={(e) => handleSearchChange('customer_id', e.target.value)}
-                >
-                  <option value="">ทุกลูกค้า</option>
-                  {customers.map(customer => (
-                    <option key={customer._id} value={customer._id}>
-                      {customer.name}
-                    </option>
-                  ))}
-                </Select>
+                  customers={customers}
+                  placeholder="เลือกลูกค้า"
+                  allOption={true}
+                  allOptionText="ทุกลูกค้า"
+                />
               </div>
 
               {/* Payment Method */}

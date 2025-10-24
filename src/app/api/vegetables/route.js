@@ -5,10 +5,10 @@ import Vegetable from '@/models/Vegetable';
 export async function GET(request) {
   try {
     await dbConnect();
-    
+
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
-    
+
     const query = search
       ? {
           $or: [
@@ -17,9 +17,9 @@ export async function GET(request) {
           ]
         }
       : {};
-    
+
     const vegetables = await Vegetable.find(query).sort({ name_th: 1 });
-    
+
     return NextResponse.json(vegetables);
   } catch (error) {
     return NextResponse.json(

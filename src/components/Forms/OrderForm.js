@@ -283,11 +283,13 @@ export default function OrderForm({ order, onSubmit, onCancel }) {
             required
           >
             <option value="">เลือกลูกค้า</option>
-            {customers.map(customer => (
-              <option key={customer._id} value={customer._id}>
-                {customer.name}
-              </option>
-            ))}
+            {customers
+              .filter(customer => customer.active !== false)
+              .map(customer => (
+                <option key={customer._id} value={customer._id}>
+                  {customer.name}
+                </option>
+              ))}
           </Select>
         </div>
       </div>
