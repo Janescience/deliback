@@ -2,7 +2,19 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Vegetable from '@/models/Vegetable';
 
-export async function GET(request) {
+// CORS headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+// Handle preflight requests
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
+export async function GET() {
   try {
     await dbConnect();
 
@@ -19,11 +31,11 @@ export async function GET(request) {
       status: veg.status
     }));
 
-    return NextResponse.json(transformedVegetables);
+    return NextResponse.json(transformedVegetables, { headers: corsHeaders });
   } catch (error) {
     return NextResponse.json(
       { error: error.message },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
