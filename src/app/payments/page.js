@@ -255,9 +255,35 @@ export default function PaymentsPage() {
           <div className="text-center py-8 text-gray-500">กำลังโหลด...</div>
         ) : (
           <>
-            {/* Summary Cards - Desktop Only */}
-            <div className="hidden lg:block mb-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Summary Cards - Responsive */}
+            <div className="mb-6">
+              {/* Mobile Summary - Compact */}
+              <div className="lg:hidden mb-4 bg-gray-50 rounded-lg p-4">
+                <div className="grid grid-cols-2 gap-4 text-center">
+                  <div className="bg-white rounded-lg p-4">
+                    <div className="text-sm text-gray-500 mb-2">เครดิต</div>
+                    <div className="text-lg font-medium text-black">
+                      {formatMoney(getSummaryData(creditCustomers).totalAmount)} บ.
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {getSummaryData(creditCustomers).customerCount} ลูกค้า
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg p-4">
+                    <div className="text-sm text-gray-500 mb-2">โอนเงิน</div>
+                    <div className="text-lg font-medium text-black">
+                      {formatMoney(getSummaryData(transferCustomers).totalAmount)} บ.
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {getSummaryData(transferCustomers).customerCount} ลูกค้า
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Desktop Summary - Full */}
+              <div className="hidden lg:block">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Credit Summary */}
                 <div className="bg-white border border-gray-100 rounded-lg p-6 shadow-sm">
                   <div className="flex items-center justify-between mb-4">
@@ -349,6 +375,7 @@ export default function PaymentsPage() {
                     )}
                   </div>
                 </div>
+              </div>
               </div>
             </div>
           </>

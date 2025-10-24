@@ -378,6 +378,7 @@ export default function OrderForm({ order, onSubmit, onCancel }) {
                           onChange={(e) => updateSelectedVegetable(item.vegetable_id, 'quantity', parseFloat(e.target.value) || 0)}
                           min="0"
                           step="0.01"
+                          inputMode="decimal"
                           className="text-xs"
                           placeholder="0"
                         />
@@ -393,6 +394,7 @@ export default function OrderForm({ order, onSubmit, onCancel }) {
                           onChange={(e) => updateSelectedVegetable(item.vegetable_id, 'price', parseFloat(e.target.value) || 0)}
                           min="0"
                           step="0.01"
+                          inputMode="decimal"
                           className="text-xs"
                         />
                       </div>
@@ -443,6 +445,7 @@ export default function OrderForm({ order, onSubmit, onCancel }) {
                           onChange={(e) => updateSelectedVegetable(item.vegetable_id, 'quantity', parseFloat(e.target.value) || 0)}
                           min="0"
                           step="0.01"
+                          inputMode="decimal"
                           className="text-xs"
                           placeholder="0"
                         />
@@ -458,6 +461,7 @@ export default function OrderForm({ order, onSubmit, onCancel }) {
                           onChange={(e) => updateSelectedVegetable(item.vegetable_id, 'price', parseFloat(e.target.value) || 0)}
                           min="0"
                           step="0.01"
+                          inputMode="decimal"
                           className="text-xs"
                         />
                       </div>

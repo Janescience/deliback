@@ -13,11 +13,11 @@ import { getThailandTodayString } from '@/lib/thailand-time-client';
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState([]);
+  const [ordersByDate, setOrdersByDate] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingOrder, setEditingOrder] = useState(null);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [showSearchCriteria, setShowSearchCriteria] = useState(false);
   const [searchCriteria, setSearchCriteria] = useState({
     customer_id: '',
@@ -172,7 +172,7 @@ export default function OrdersPage() {
         console.log('SSE connection closed');
       }
     };
-  }, [page]);
+  }, []);
 
   useEffect(() => {
     fetchOrders();
@@ -182,31 +182,25 @@ export default function OrdersPage() {
     try {
       setLoading(true);
       const queryParams = new URLSearchParams({
-        page: page.toString(),
-        limit: '10',
         ...Object.fromEntries(
           Object.entries(searchCriteria).filter(([_, value]) => value !== '')
         )
       });
       const response = await axios.get(`/api/orders?${queryParams}`);
-      
-      // Sort orders by delivery date (newest first) and quantity (highest first) within each date
-      const sortedOrders = response.data.orders.sort((a, b) => {
-        // First sort by delivery date (newest first)
-        const dateA = new Date(a.delivery_date);
-        const dateB = new Date(b.delivery_date);
-        if (dateB.getTime() !== dateA.getTime()) {
-          return dateB.getTime() - dateA.getTime();
+
+      setOrdersByDate(response.data.ordersByDate || []);
+      setOrders(response.data.allOrders || []);
+
+      // Auto-select first date if multiple dates, or show all if single date
+      if (response.data.ordersByDate && response.data.ordersByDate.length > 0) {
+        if (response.data.ordersByDate.length === 1) {
+          // Single date: show all orders
+          setSelectedDate(null);
+        } else {
+          // Multiple dates: select first date
+          setSelectedDate(response.data.ordersByDate[0].date);
         }
-        
-        // If same date, sort by total quantity (highest first)
-        const quantityA = a.details?.reduce((total, detail) => total + (detail.quantity || 0), 0) || 0;
-        const quantityB = b.details?.reduce((total, detail) => total + (detail.quantity || 0), 0) || 0;
-        return quantityB - quantityA;
-      });
-      
-      setOrders(sortedOrders);
-      setTotalPages(response.data.totalPages);
+        }
     } catch (error) {
       toast.error('ไม่สามารถโหลดข้อมูลคำสั่งซื้อได้');
     } finally {
@@ -294,7 +288,6 @@ export default function OrdersPage() {
       
       return updated;
     });
-    setPage(1); // Reset to first page when searching
   };
 
   const clearSearch = () => {
@@ -304,11 +297,32 @@ export default function OrdersPage() {
       delivery_date_to: new Date().toISOString().split('T')[0],
       pay_method: ''
     });
-    setPage(1);
   };
 
   const formatMoney = (amount) => {
     return Math.round(amount).toLocaleString();
+  };
+
+  const formatDateThai = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('th-TH', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'long'
+    });
+  };
+
+  const getDisplayOrders = () => {
+    if (ordersByDate.length === 1) {
+      // Single date: show all orders
+      return orders;
+    } else if (selectedDate) {
+      // Multiple dates: show orders for selected date
+      const dateGroup = ordersByDate.find(group => group.date === selectedDate);
+      return dateGroup ? dateGroup.orders : [];
+    }
+    return [];
   };
 
   // Check if there are holidays in the selected date range
@@ -476,6 +490,26 @@ export default function OrdersPage() {
         <>
           {orders.length > 0 && (
             <>
+              {/* Date Selector - Show only when multiple dates */}
+              {ordersByDate.length > 1 && (
+                <div className="border border-gray-200 rounded mb-3 p-3 bg-blue-50">
+                  <div className="flex flex-wrap gap-2">
+                    {ordersByDate.map((dateGroup) => (
+                      <Button
+                        key={dateGroup.date}
+                        onClick={() => setSelectedDate(dateGroup.date)}
+                        variant={selectedDate === dateGroup.date ? 'primary' : 'secondary'}
+                        size="sm"
+                        className="text-xs"
+                      >
+                        {formatDateThai(dateGroup.date)}
+                        <span className="ml-1 font-bold">({dateGroup.totalOrders})</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Summary Section - Clean 2 Section Layout */}
               <div className=" border border-gray-200 rounded mb-3 p-3 bg-gray-100">
                 {/* Desktop Layout */}
@@ -483,20 +517,20 @@ export default function OrdersPage() {
                   {/* Section 1: Basic Stats */}
                   <div className="flex items-center space-x-6">
                     <span className="text-black">
-                      <strong className="">{orders.length}</strong> คำสั่ง
+                      <strong className="">{getDisplayOrders().length}</strong> คำสั่ง
                     </span>
                     <span className="text-black">
-                      <strong className="">{new Set(orders.map(order => order.customer_id?._id).filter(Boolean)).size}</strong> ลูกค้า
+                      <strong className="">{new Set(getDisplayOrders().map(order => order.customer_id?._id).filter(Boolean)).size}</strong> ลูกค้า
                     </span>
                     <span className="text-black">
                       <strong className="">
-                        {orders.reduce((total, order) => 
+                        {getDisplayOrders().reduce((total, order) =>
                           total + (order.details?.reduce((sum, detail) => sum + (detail.quantity || 0), 0) || 0), 0
                         ).toFixed(2)}
                       </strong> กก.
                     </span>
                     <span className="text-black">
-                      <strong className="">{formatMoney(orders.reduce((total, order) => total + (order.total || 0), 0))}</strong> บ.
+                      <strong className="">{formatMoney(getDisplayOrders().reduce((total, order) => total + (order.total || 0), 0))}</strong> บ.
                     </span>
                   </div>
                   
@@ -504,19 +538,19 @@ export default function OrdersPage() {
                   <div className="flex items-center space-x-6 text-gray-600">
                     <span>
                       เงินสด <strong className="text-black ">
-                        {formatMoney(orders.filter(order => order.customer_id?.pay_method === 'cash')
+                        {formatMoney(getDisplayOrders().filter(order => order.customer_id?.pay_method === 'cash')
                           .reduce((sum, order) => sum + (order.total || 0), 0))}
                       </strong>
                     </span>
                     <span>
                       เครดิต <strong className="text-black ">
-                        {formatMoney(orders.filter(order => order.customer_id?.pay_method === 'credit')
+                        {formatMoney(getDisplayOrders().filter(order => order.customer_id?.pay_method === 'credit')
                           .reduce((sum, order) => sum + (order.total || 0), 0))}
                       </strong>
                     </span>
                     <span>
                       โอนเงิน <strong className="text-black ">
-                        {formatMoney(orders.filter(order => order.customer_id?.pay_method === 'transfer')
+                        {formatMoney(getDisplayOrders().filter(order => order.customer_id?.pay_method === 'transfer')
                           .reduce((sum, order) => sum + (order.total || 0), 0))}
                       </strong>
                     </span>
@@ -528,15 +562,15 @@ export default function OrdersPage() {
                   <div className="font-light text-center ">
                     <div className="flex justify-between items-center">
                       <div className="flex space-x-1">
-                        <span>{orders.length} คำสั่ง</span>
-                        <span>{new Set(orders.map(order => order.customer_id?._id).filter(Boolean)).size} ลูกค้า</span>
+                        <span>{getDisplayOrders().length} คำสั่ง</span>
+                        <span>{new Set(getDisplayOrders().map(order => order.customer_id?._id).filter(Boolean)).size} ลูกค้า</span>
                       </div>
                       <div className="flex items-center space-x-1">
-                        <span >{orders.reduce((total, order) => 
+                        <span >{getDisplayOrders().reduce((total, order) =>
                           total + (order.details?.reduce((sum, detail) => sum + (detail.quantity || 0), 0) || 0), 0
                         ).toFixed(2)} กก.</span>
                         <span className="text-black">
-                          {formatMoney(orders.reduce((total, order) => total + (order.total || 0), 0))} บ.
+                          {formatMoney(getDisplayOrders().reduce((total, order) => total + (order.total || 0), 0))} บ.
                         </span>
                       </div>
                     </div>
@@ -567,25 +601,10 @@ export default function OrdersPage() {
             </>
           )}
           <OrderTable
-            orders={orders}
+            orders={getDisplayOrders()}
             onEdit={handleEdit}
             onDelete={handleDelete}
           />
-          
-          {totalPages > 1 && (
-            <div className="flex justify-center mt-6 gap-1 sm:gap-2 flex-wrap">
-              {Array.from({ length: totalPages }, (_, i) => (
-                <Button
-                  key={i + 1}
-                  onClick={() => setPage(i + 1)}
-                  variant={page === i + 1 ? 'primary' : 'secondary'}
-                  size="sm"
-                >
-                  {i + 1}
-                </Button>
-              ))}
-            </div>
-          )}
         </>
       )}
       </div>

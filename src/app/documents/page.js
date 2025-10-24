@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FileText, Download, Eye, Calendar, Users, Archive, X, Printer, CreditCard, AlertCircle } from 'lucide-react';
+import { FileText, Download, Eye, Calendar, Users, Archive, X, Printer, CreditCard, AlertCircle, History } from 'lucide-react';
 import { getThailandTodayString } from '@/lib/thailand-time-client';
 import { generateDocumentData, DocumentTemplate } from '@/lib/documentTemplate';
 
@@ -61,6 +61,9 @@ export default function DocumentsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState('');
   const [billingPreviewData, setBillingPreviewData] = useState(null);
   const [showBillingPreview, setShowBillingPreview] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [billingHistory, setBillingHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   useEffect(() => {
     fetchCompanySettings();
@@ -101,7 +104,7 @@ export default function DocumentsPage() {
     try {
       setLoading(true);
       const response = await axios.get(`/api/orders?delivery_date_from=${selectedDate}&delivery_date_to=${selectedDate}`);
-      const todayOrders = response.data.orders;
+      const todayOrders = response.data.allOrders || response.data.orders || [];
 
       // Group orders by customer and payment method
       const grouped = {};
@@ -623,6 +626,25 @@ export default function DocumentsPage() {
     });
   };
 
+  const fetchBillingHistory = async () => {
+    try {
+      setHistoryLoading(true);
+      const response = await axios.get('/api/billing-history?limit=10');
+      setBillingHistory(response.data.data || []);
+    } catch (error) {
+      console.error('Failed to fetch billing history:', error);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const handleShowHistory = () => {
+    setShowHistory(true);
+    if (billingHistory.length === 0) {
+      fetchBillingHistory();
+    }
+  };
+
   return (
     <>
       {/* Mobile Fixed Header */}
@@ -789,7 +811,7 @@ export default function DocumentsPage() {
             
             {/* Header Row */}
             <div className="border-b border-gray-300 pb-2 mb-2 hidden sm:block">
-              <div className="grid grid-cols-12 gap-2 text-sm font-light text-gray-700">
+              <div className="grid grid-cols-13 gap-2 text-sm font-light text-gray-700">
                 <div className="col-span-1 flex justify-center">
                   <input
                     type="checkbox"
@@ -798,6 +820,7 @@ export default function DocumentsPage() {
                     className="w-4 h-4"
                   />
                 </div>
+                <div className="col-span-1 text-center">ลำดับ</div>
                 <div className="col-span-2">เลขที่เอกสาร</div>
                 <div className="col-span-2">ชื่อร้าน</div>
                 <div className="col-span-2">บริษัท</div>
@@ -809,7 +832,20 @@ export default function DocumentsPage() {
             </div>
             
             <div className="space-y-1">
-              {Object.entries(groupedOrders).map(([key, group]) => {
+              {Object.entries(groupedOrders)
+                .sort(([, a], [, b]) => {
+                  // Sort by document type first (credit = ใบส่งสินค้า comes first)
+                  if (a.payMethod !== b.payMethod) {
+                    if (a.payMethod === 'credit') return -1;
+                    if (b.payMethod === 'credit') return 1;
+                  }
+
+                  // Then sort by document number
+                  const docNumberA = a.orders.find(order => order.docnumber)?.docnumber || 'ยังไม่สร้าง';
+                  const docNumberB = b.orders.find(order => order.docnumber)?.docnumber || 'ยังไม่สร้าง';
+                  return docNumberA.localeCompare(docNumberB);
+                })
+                .map(([key, group], sortedIndex) => {
                 const hasWarnings = !group.customer.tax_id || !group.customer.address;
                 const totalItems = group.orders.reduce((sum, order) => {
                   return sum + (order.details?.reduce((detailSum, detail) => detailSum + detail.quantity, 0) || 0);
@@ -834,8 +870,8 @@ export default function DocumentsPage() {
                         </div>
                       )}
                       
-                      {/* Row 1: Checkbox, Doc Number, Store Name, Type */}
-                      <div className="grid grid-cols-12 gap-1 items-center text-xs mb-1">
+                      {/* Row 1: Checkbox, Sequence, Doc Number, Store Name, Type */}
+                      <div className="grid grid-cols-13 gap-1 items-center text-xs mb-1">
                         <div className="col-span-1">
                           <input
                             type="checkbox"
@@ -844,20 +880,26 @@ export default function DocumentsPage() {
                             className="w-3 h-3"
                           />
                         </div>
-                        
-                        <div className="col-span-3">
+
+                        <div className="col-span-1">
+                          <div className="text-center text-gray-600 font-light text-xs">
+                            {sortedIndex + 1}
+                          </div>
+                        </div>
+
+                        <div className="col-span-2">
                           <div className="font-light text-black truncate" title={docNumber}>
                             {docNumber}
                           </div>
                         </div>
-                        
+
                         <div className="col-span-6">
                           <div className="font-light text-black truncate" title={group.customer.name}>
                             {group.customer.name}
                           </div>
                         </div>
-                        
-                        <div className="col-span-2">
+
+                        <div className="col-span-3">
                           <span className={`text-[10px] px-1 py-1 rounded block text-center ${getDocumentColor(group.payMethod)}`}>
                             {group.payMethod === 'credit' ? 'ใบส่งสินค้า' : 'ใบเสร็จ'}
                           </span>
@@ -865,29 +907,29 @@ export default function DocumentsPage() {
                       </div>
                       
                       {/* Row 2: Company, Vegetable Count, Weight, Total Price */}
-                      <div className="grid grid-cols-12 gap-1 items-center text-xs">
-                        <div className="col-span-1"></div>
-                        
+                      <div className="grid grid-cols-13 gap-1 items-center text-xs">
+                        <div className="col-span-2"></div>
+
                         <div className="col-span-4">
                           <div className="font-light text-black truncate" title={group.customer.company_name || '-'}>
                             {group.customer.company_name || '-'}
                           </div>
                         </div>
-                        
+
                         <div className="col-span-2">
                           <div className="font-light text-black text-center">
                             {group.orders.reduce((sum, order) => sum + (order.details?.length || 0), 0)}
                           </div>
                           <div className="text-[10px] text-gray-500 text-center">รายการ</div>
                         </div>
-                        
+
                         <div className="col-span-2">
                           <div className="font-light text-black text-center">
                             {totalItems.toFixed(1)}
                           </div>
                           <div className="text-[10px] text-gray-500 text-center">กก.</div>
                         </div>
-                        
+
                         <div className="col-span-3">
                           <div className="font-light text-green-600 text-right">
                             {formatMoney(group.totalAmount)}
@@ -898,7 +940,7 @@ export default function DocumentsPage() {
                     </div>
                     
                     {/* Desktop Layout (1 row) */}
-                    <div className="hidden sm:grid sm:grid-cols-12 gap-2 items-center text-sm">
+                    <div className="hidden sm:grid sm:grid-cols-13 gap-2 items-center text-sm">
                       {/* Checkbox + Warning */}
                       <div className="col-span-1 flex flex-col items-center">
                         <input
@@ -911,49 +953,56 @@ export default function DocumentsPage() {
                           <span className="text-yellow-600 text-xs mt-1" title="ข้อมูลไม่ครบ">⚠️</span>
                         )}
                       </div>
-                      
+
+                      {/* Sequence Number */}
+                      <div className="col-span-1">
+                        <div className="text-center text-gray-600 font-light">
+                          {sortedIndex + 1}
+                        </div>
+                      </div>
+
                       {/* Document Number */}
                       <div className="col-span-2">
                         <div className="font-light text-black truncate" title={docNumber}>
                           {docNumber}
                         </div>
                       </div>
-                      
+
                       {/* Store Name */}
                       <div className="col-span-2">
                         <div className="font-light text-black truncate" title={group.customer.name}>
                           {group.customer.name}
                         </div>
                       </div>
-                      
+
                       {/* Company */}
                       <div className="col-span-2">
                         <div className="font-light text-black truncate" title={group.customer.company_name || '-'}>
                           {group.customer.company_name || '-'}
                         </div>
                       </div>
-                      
+
                       {/* Document Type */}
                       <div className="col-span-1">
                         <span className={`text-xs px-2 py-1 rounded block text-center ${getDocumentColor(group.payMethod)}`}>
                           {group.payMethod === 'credit' ? 'ส่ง' : 'เสร็จ'}
                         </span>
                       </div>
-                      
+
                       {/* Vegetable Count */}
                       <div className="col-span-1">
                         <div className="font-light text-black text-center">
                           {group.orders.reduce((sum, order) => sum + (order.details?.length || 0), 0)}
                         </div>
                       </div>
-                      
+
                       {/* Total Weight */}
                       <div className="col-span-1">
                         <div className="font-light text-black text-center">
                           {totalItems.toFixed(1)}
                         </div>
                       </div>
-                      
+
                       {/* Total Price */}
                       <div className="col-span-2">
                         <div className="font-light text-green-600 text-right">
@@ -1088,24 +1137,39 @@ export default function DocumentsPage() {
               <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 mb-4">
                 {/* Mobile period selector */}
                 <div className="lg:hidden mb-4">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-light text-black">เลือกรอบบิล</h2>
-                    <select
-                      value={selectedPeriod}
-                      onChange={(e) => setSelectedPeriod(e.target.value)}
-                      className="border border-gray-300 rounded px-2 py-1 text-sm"
+                  <div className="flex items-center justify-between mb-3">
+                    <button
+                      onClick={handleShowHistory}
+                      className="flex items-center px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
                     >
-                      {generatePeriodOptions().map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                      <History className="w-3 h-3 mr-1" />
+                      ประวัติ
+                    </button>
+                    <h2 className="text-lg font-light text-black">เลือกรอบบิล</h2>
                   </div>
+                  <select
+                    value={selectedPeriod}
+                    onChange={(e) => setSelectedPeriod(e.target.value)}
+                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                  >
+                    {generatePeriodOptions().map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                {/* Desktop period selector */}
-                <div className="hidden lg:flex justify-end items-center mb-4">
+                {/* Desktop header with history button and period selector */}
+                <div className="hidden lg:flex justify-between items-center mb-4">
+                  <button
+                    onClick={handleShowHistory}
+                    className="flex items-center px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    <History className="w-4 h-4 mr-2" />
+                    ประวัติการวางบิล
+                  </button>
+
                   <div className="flex items-center space-x-2">
                     <Calendar className="w-4 h-4 text-gray-600" />
                     <select
@@ -1437,6 +1501,94 @@ export default function DocumentsPage() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Billing History Modal */}
+        {showHistory && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg max-w-4xl max-h-[90vh] overflow-hidden flex flex-col w-full">
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b">
+                <div className="flex items-center">
+                  <History className="w-5 h-5 text-gray-600 mr-2" />
+                  <h3 className="text-xl font-light text-black">ประวัติการวางบิล</h3>
+                </div>
+                <button
+                  onClick={() => setShowHistory(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto">
+                {historyLoading ? (
+                  <div className="p-8 text-center">
+                    <div className="text-gray-500">กำลังโหลดประวัติ...</div>
+                  </div>
+                ) : billingHistory.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <History className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-light text-gray-900 mb-2">ไม่มีประวัติการวางบิล</h3>
+                    <p className="text-gray-500 mb-4">ยังไม่มีการสร้างใบวางบิลในระบบ</p>
+                    <p className="text-blue-600 text-sm">
+                      💡 เมื่อคุณสร้างใบวางบิลแล้ว ระบบจะเก็บประวัติไว้ให้ดูที่นี่
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-4">
+                    <div className="space-y-4">
+                      {billingHistory.map((history) => (
+                        <div key={history._id} className="border border-gray-200 rounded-lg p-4">
+                          {/* Header */}
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                            <div>
+                              <h4 className="font-light text-black text-lg">รอบบิล {history.billing_period}</h4>
+                              <p className="text-gray-600 text-sm">{formatDate(history.created_date)}</p>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg font-light text-black">{formatMoney(history.total_amount)} บาท</div>
+                              <div className="text-gray-500 text-sm">{history.total_customers} ลูกค้า</div>
+                            </div>
+                          </div>
+
+                          {/* Summary */}
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="bg-gray-50 rounded p-3">
+                              <div className="text-gray-600 text-sm mb-1">จำนวนลูกค้า</div>
+                              <div className="font-light text-black">{history.total_customers} ราย</div>
+                            </div>
+                            <div className="bg-gray-50 rounded p-3">
+                              <div className="text-gray-600 text-sm mb-1">จำนวนใบวางบิล</div>
+                              <div className="font-light text-black">{history.total_invoices} ใบ</div>
+                            </div>
+                            <div className="bg-green-50 rounded p-3">
+                              <div className="text-green-600 text-sm mb-1">ยอดรวมทั้งหมด</div>
+                              <div className="font-light text-green-800">{formatMoney(history.total_amount)} บาท</div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between p-4 border-t bg-gray-50">
+                <div className="text-sm text-gray-600">
+                  {billingHistory.length > 0 && `แสดง ${billingHistory.length} รายการล่าสุด`}
+                </div>
+                <button
+                  onClick={() => setShowHistory(false)}
+                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-100"
+                >
+                  ปิด
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

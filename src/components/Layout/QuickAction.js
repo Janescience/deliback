@@ -36,7 +36,7 @@ export default function QuickAction() {
     try {
       const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Bangkok' });
       const response = await axios.get(`/api/orders?delivery_date_from=${today}&delivery_date_to=${today}`);
-      const todayOrders = response.data.orders;
+      const todayOrders = response.data.allOrders || response.data.orders || [];
 
       // Process vegetable summary
       const vegetableSummary = {};

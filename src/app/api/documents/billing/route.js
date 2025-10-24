@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Order from '@/models/Order';
 import Customer from '@/models/Customer';
+import BillingHistory from '@/models/BillingHistory';
 import mongoose from 'mongoose';
 import { getThailandToday, getThailandMonthRange, addThailandDays } from '@/lib/thailand-time';
 
@@ -132,6 +133,8 @@ export async function POST(request) {
     
     const body = await request.json();
     const { selectedCustomers, billingDate } = body;
+
+    console.log('Received selectedCustomers:', JSON.stringify(selectedCustomers.slice(0, 1), null, 2)); // Log first customer for debugging
     
     
     const documents = [];
@@ -211,11 +214,43 @@ export async function POST(request) {
       documents.push(documentData);
     }
     
-    
+    // Save billing history
+    const billingHistoryData = {
+      billing_period: selectedPeriod,
+      created_by: 'admin', // You can get this from authentication
+      total_amount: selectedCustomers.reduce((sum, customer) => sum + (customer.totalAmount || 0), 0),
+      total_customers: selectedCustomers.length,
+      total_invoices: documents.length,
+      customers: selectedCustomers.map((customer, index) => ({
+        customer_id: customer.customer?._id || customer._id,
+        customer_name: customer.customer?.name || customer.name,
+        company_name: customer.customer?.company_name || customer.company_name || '',
+        amount: customer.totalAmount || 0,
+        order_count: customer.orders?.length || 0,
+        date_range: {
+          from: customer.earliestDate || startDate,
+          to: customer.latestDate || endDate
+        },
+        invoice_number: documents[index]?.docNumber || `B${dateStr}${String(index + 1).padStart(3, '0')}`
+      })),
+      delivery_method: 'print'
+    };
+
+    console.log('Saving billing history:', JSON.stringify(billingHistoryData, null, 2));
+
+    try {
+      const savedHistory = await BillingHistory.create(billingHistoryData);
+      console.log('Billing history saved successfully:', savedHistory._id);
+    } catch (historyError) {
+      console.error('Failed to save billing history:', historyError);
+      // Don't fail the entire operation if history saving fails
+    }
+
     return NextResponse.json({
       success: true,
       documents,
       actualBillingDate: actualBillingDate.toISOString().split('T')[0],
+      billingHistory: billingHistoryData,
       message: `สร้างใบวางบิล ${documents.length} ฉบับเรียบร้อยแล้ว`
     });
     

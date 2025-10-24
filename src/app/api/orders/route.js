@@ -10,11 +10,9 @@ import { getThailandDayRange } from '@/lib/thailand-time';
 export async function GET(request) {
   try {
     await dbConnect();
-    
+
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const skip = (page - 1) * limit;
+    // Remove pagination parameters - we'll group by date instead
     
     // Build search query
     const query = {};
@@ -68,11 +66,9 @@ export async function GET(request) {
       query.customer_id = { $in: customerIds };
     }
     
-    // First try query with filters
+    // Get all orders matching the criteria (no pagination)
     orders = await Order.find(query)
-      .sort({ created_date: -1 })
-      .skip(skip)
-      .limit(limit)
+      .sort({ delivery_date: -1, created_date: -1 })
       .lean();
       
     
@@ -112,13 +108,43 @@ export async function GET(request) {
     );
       
     
-    const total = await Order.countDocuments(query);
-    
+    // Group orders by delivery date
+    const ordersByDate = populatedOrders.reduce((groups, order) => {
+      const deliveryDate = new Date(order.delivery_date);
+      const dateKey = deliveryDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+      if (!groups[dateKey]) {
+        groups[dateKey] = [];
+      }
+      groups[dateKey].push(order);
+      return groups;
+    }, {});
+
+    // Convert to array format with date information
+    const groupedOrders = Object.entries(ordersByDate)
+      .map(([date, orders]) => ({
+        date,
+        orders: orders.sort((a, b) => new Date(b.created_date) - new Date(a.created_date)), // Sort orders within date by creation time
+        totalOrders: orders.length,
+        totalAmount: orders.reduce((sum, order) => sum + (order.total || 0), 0),
+        totalQuantity: orders.reduce((total, order) =>
+          total + (order.details?.reduce((sum, detail) => sum + (detail.quantity || 0), 0) || 0), 0
+        )
+      }))
+      .sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort dates descending
+
+    const total = populatedOrders.length;
+    const uniqueDates = Object.keys(ordersByDate).length;
+
     return NextResponse.json({
-      orders: populatedOrders,
+      ordersByDate: groupedOrders,
+      allOrders: populatedOrders, // Keep flat array for compatibility
       total,
-      page,
-      totalPages: Math.ceil(total / limit)
+      uniqueDates,
+      dateRange: groupedOrders.length > 0 ? {
+        from: groupedOrders[groupedOrders.length - 1].date,
+        to: groupedOrders[0].date
+      } : null
     });
   } catch (error) {
     console.error('GET orders error:', error);
