@@ -375,8 +375,9 @@ export default function OrderForm({ order, onSubmit, onCancel }) {
                         <Input
                           type="number"
                           value={item.quantity}
-                          onChange={(e) => updateSelectedVegetable(item.vegetable_id, 'quantity', parseInt(e.target.value) || 0)}
+                          onChange={(e) => updateSelectedVegetable(item.vegetable_id, 'quantity', parseFloat(e.target.value) || 0)}
                           min="0"
+                          step="0.01"
                           className="text-xs"
                           placeholder="0"
                         />
@@ -439,8 +440,9 @@ export default function OrderForm({ order, onSubmit, onCancel }) {
                         <Input
                           type="number"
                           value={item.quantity}
-                          onChange={(e) => updateSelectedVegetable(item.vegetable_id, 'quantity', parseInt(e.target.value) || 0)}
+                          onChange={(e) => updateSelectedVegetable(item.vegetable_id, 'quantity', parseFloat(e.target.value) || 0)}
                           min="0"
+                          step="0.01"
                           className="text-xs"
                           placeholder="0"
                         />
