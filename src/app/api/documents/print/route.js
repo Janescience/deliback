@@ -55,15 +55,18 @@ function generatePrintHTML(documents, companySettings) {
         @media print {
           body { margin: 0; padding: 0; }
           .page-break { page-break-before: always; }
-          @page { 
-            margin: 15mm;
+          @page {
+            margin-top: 10mm;
+            margin-bottom: 5mm;
+            margin-left: 0;
+            margin-right: 0;
             size: A4;
           }
-          
-          /* Remove all browser default headers and footers */
-          @page :first { margin-top: 15mm; }
-          @page :left { margin-left: 15mm; }  
-          @page :right { margin-right: 15mm; }
+
+          /* Force remove headers and footers */
+          @page :first { margin-top: 10mm; }
+          @page :left { margin-left: 0; }
+          @page :right { margin-right: 0; }
           
           /* Hide page numbers and headers completely */
           * {
@@ -81,8 +84,15 @@ function generatePrintHTML(documents, companySettings) {
           font-size: ${companySettings.templateSettings.fontSize};
           line-height: 1.3;
           margin: 0;
-          padding: 15px;
+          padding: 10px;
           color: ${companySettings.templateSettings.primaryColor};
+        }
+
+        @media print {
+          body {
+            padding: 5mm 8mm;
+            margin: 0;
+          }
         }
         
         .header {
@@ -197,9 +207,41 @@ function generatePrintHTML(documents, companySettings) {
       <script>
         // Remove document title to prevent it showing in headers
         document.title = '';
-        
+
         // Additional print settings
         window.onbeforeprint = function() {
+          document.title = '';
+
+          // Try to set print margins to none programmatically
+          if (window.chrome) {
+            // Chrome specific settings
+            const printSettings = {
+              shouldPrintBackgrounds: true,
+              shouldPrintSelectionOnly: false,
+              mediaType: 'print',
+              collate: true,
+              copies: 1,
+              deviceName: '',
+              duplexMode: 0,
+              landscape: false,
+              margins: {
+                marginType: 1, // NO_MARGINS
+                marginTop: 0,
+                marginBottom: 0,
+                marginLeft: 0,
+                marginRight: 0
+              },
+              pageRanges: [],
+              printToPDF: false,
+              headerFooterEnabled: false,
+              title: '',
+              url: ''
+            };
+          }
+        };
+
+        // Hide URL and page numbers
+        window.onafterprint = function() {
           document.title = '';
         };
       </script>

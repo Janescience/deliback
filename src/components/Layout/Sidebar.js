@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { ChartArea, ShoppingCart, Angry, User, Box, Calendar, Settings, ChevronDown, Printer, Boxes, Cog } from 'lucide-react';
+import { ChartArea, ShoppingCart, Wallet, User, Box, Calendar, Settings, ChevronDown, Printer, Boxes, Cog, History } from 'lucide-react';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -24,9 +24,9 @@ export default function Sidebar() {
     },
     { 
       href: '/payments', 
-      label: 'หนี้คงค้าง',
-      shortLabel: 'หนี้คงค้าง',
-      icon: <Angry size={22} />
+      label: 'การชำระเงิน',
+      shortLabel: 'การชำระเงิน',
+      icon: <Wallet size={22} />
     },
     {
       href: '/documents',
@@ -53,6 +53,11 @@ export default function Sidebar() {
       icon: <Calendar size={22} />
     },
     {
+      href: '/user-order-history',
+      label: 'ประวัติการสั่งซื้อ',
+      icon: <History size={22} />
+    },
+    {
       href: '/settings',
       label: 'ตั้งค่าระบบ',
       icon: <Cog size={22} />
@@ -62,7 +67,7 @@ export default function Sidebar() {
   const settingsIcon = <Settings size={22} />;
 
   // Check if current path is in settings section
-  const isInSettingsSection = ['/customers', '/vegetables', '/holidays', '/settings'].includes(pathname);
+  const isInSettingsSection = ['/customers', '/vegetables', '/holidays', '/user-order-history', '/settings'].includes(pathname);
 
   return (
     <>

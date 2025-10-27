@@ -151,12 +151,12 @@ export const DocumentTemplate = ({ data, className = '' }) => {
       {/* Header */}
       <div className="flex items-start justify-between pb-3">
         {/* Logo + Company Info - Left */}
-        <div className="flex items-start">
+        <div className="flex items-center">
           <div
-            className=" flex items-center justify-center mr-3"
+            className="flex items-center justify-center mr-4"
             style={{
-              width: `${companySettings.logo?.width || 64}px`,
-              height: `${companySettings.logo?.height || 64}px`
+              width: `${companySettings.logo?.width || 80}px`,
+              height: `${companySettings.logo?.height || 80}px`
             }}
           >
             {companySettings.logo?.url ? (
@@ -169,7 +169,7 @@ export const DocumentTemplate = ({ data, className = '' }) => {
               <span className="text-xs text-gray-500">LOGO</span>
             )}
           </div>
-          <div className="text-left">
+          <div className="text-left flex flex-col justify-center">
             <div className="text-lg font-bold mb-1">{companySettings.companyName}</div>
             <div className="text-xs leading-tight">
               {companySettings.address?.line1}<br/>
@@ -294,116 +294,95 @@ export const DocumentTemplate = ({ data, className = '' }) => {
         </tbody>
       </table>
 
-      {/* Bottom Section */}
-      <div className="flex justify-between">
-        <div className="flex-1">
-          <table className="w-full border border-black border-collapse">
-            <tbody>
-              <tr>
-                <td className="border border-black p-2 font-bold">หมายเหตุ</td>
-                <td className="border border-black p-2">{document.customer.name}</td>
-              </tr>
-              <tr>
-                <td className="border border-black p-2 font-bold">จำนวนเงิน (ตัวอักษร)</td>
-                <td className="border border-black p-2">{textAmount}</td>
-              </tr>
-            </tbody>
-          </table>
+      {/* Bottom Section - Combined Table */}
+      <table className="w-full border border-black border-collapse text-xs">
+        <tbody>
+          {/* Row 1: หมายเหตุ + ยอดรวม */}
+          <tr>
+            <td className="p-2 font-bold border border-black w-1/5">หมายเหตุ</td>
+            <td className="p-2 border border-black w-2/5">{document.customer.name}</td>
+            <td className="p-2 font-bold border border-black w-1/4">รวมจำนวนเงิน</td>
+            <td className="p-2 text-right border border-black w-1/5">{Math.round(subtotal).toFixed(2)}</td>
+          </tr>
 
-          <table className="w-full border border-black border-collapse">
-            <tbody>
-              <tr>
-                <td className="p-2 text-xs">
-                  <strong>ชำระโดย</strong>
-                  
-                </td>
-              </tr>
-              <tr>
-                <td className=" p-2 text-xs">
-                  {document.docType === 'receipt' ? (
-                    document.customer?.pay_method === 'cash' ? (
-                        <strong>เงินสด</strong>
-                    ) : document.customer?.pay_method === 'transfer' ? (
-                      <div>
-                        <strong>โอนเงิน</strong><br/>
-                        <div >
-                          <strong>ช่องทางการชำระเงิน:</strong><br/>
-                          {companySettings.bankSettings?.bankName || 'ธนาคารกสิกรไทย'}<br/>
-                          เลขที่บัญชี {companySettings.bankSettings?.accountNumber || '113-8-48085-9'}<br/>
-                          ชื่อบัญชี {companySettings.bankSettings?.accountName || 'นายฮาเล็ม เจะมาริกัน'}<br/>
-                          {companySettings.bankSettings?.transferInstructions || 'กรณีโอนชำระเงินเรียบร้อยแล้ว กรุณาส่งหลักฐานยืนยันการชำระผ่านทาง LINE'}
-                        </div>
-                      </div>
-                    ) : (
-                      <div >
-                        <strong>เครดิต</strong> &nbsp;&nbsp;&nbsp; {companySettings.documentSettings?.paymentTermsText || 'ตัดรอบวางบิลทุกวันที่ 15 ของเดือน'}<br/>
-                      </div>
-                    )
-                  ) : (
-                    <div >
-                       <strong>เครดิต</strong> &nbsp;&nbsp;&nbsp; {companySettings.documentSettings?.paymentTermsText || 'ตัดรอบวางบิลทุกวันที่ 15 ของเดือน'}<br/>
-                    </div>
-                  )}
-                  
-                </td>
-              </tr>
-              <tr>
-                <td className=" p-2 text-xs">&nbsp;</td>
-              </tr>
-              <tr>
-                <td className="p-2 text-xs">&nbsp;</td>
-              </tr>
-              <tr>
-                <td className="p-2 text-xs">
-                  {document.docType !== 'receipt' || document.customer?.pay_method === 'credit' ? (
+          {/* Row 2: จำนวนเงิน (ตัวอักษร) + VAT */}
+          <tr>
+            <td className="p-2 font-bold border border-black">จำนวนเงิน (ตัวอักษร)</td>
+            <td className="p-2 border border-black">{textAmount}</td>
+            <td className="p-2 font-bold border border-black">ภาษีมูลค่าเพิ่ม (Vat) 7%</td>
+            <td className="p-2 text-right border border-black">0</td>
+          </tr>
+
+          {/* Row 3: ชำระโดย + Net Total */}
+          <tr>
+            <td className="p-2 font-bold border border-black">ชำระโดย</td>
+            <td className="p-2 border border-black">
+              {document.docType === 'receipt' ? (
+                document.customer?.pay_method === 'cash' ? (
+                  <strong>เงินสด</strong>
+                ) : document.customer?.pay_method === 'transfer' ? (
+                  <div>
+                    <strong>โอนเงิน</strong><br/>
                     <div>
-                      <strong>เงื่อนไขการชำระเงิน</strong> {companySettings.documentSettings?.paymentConditionText || 'รบกวนชําระเงินภายใน 7 วันหลังจากวางบิล'}
+                      <strong>ช่องทางการชำระเงิน:</strong><br/>
+                      {companySettings.bankSettings?.bankName || 'ธนาคารกสิกรไทย'}<br/>
+                      เลขที่บัญชี {companySettings.bankSettings?.accountNumber || '113-8-48085-9'}<br/>
+                      ชื่อบัญชี {companySettings.bankSettings?.accountName || 'นายฮาเล็ม เจะมาริกัน'}<br/>
+                      {companySettings.bankSettings?.transferInstructions || 'กรณีโอนชำระเงินเรียบร้อยแล้ว กรุณาส่งหลักฐานยืนยันการชำระผ่านทาง LINE'}
                     </div>
-                  ) : <div>&nbsp;</div>}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                  </div>
+                ) : (
+                  <div>
+                    <strong>เครดิต</strong> &nbsp;&nbsp;&nbsp; {companySettings.documentSettings?.paymentTermsText || 'ตัดรอบวางบิลทุกวันที่ 15 ของเดือน'}
+                  </div>
+                )
+              ) : (
+                <div>
+                  <strong>เครดิต</strong> &nbsp;&nbsp;&nbsp; {companySettings.documentSettings?.paymentTermsText || 'ตัดรอบวางบิลทุกวันที่ 15 ของเดือน'}
+                </div>
+              )}
+            </td>
+            <td className="p-2 font-bold border border-black">จำนวนเงินรวมทั้งสิ้น / Net Total</td>
+            <td className="p-2 text-right border border-black">{Math.round(subtotal).toFixed(2)}</td>
+          </tr>
 
-        <div className="w-80">
-          <table className="w-full">
-            <tbody>
-              <tr>
-                <td className="border border-black p-2 font-bold">รวมจำนวนเงิน</td>
-                <td className="border border-black p-2 text-right">{Math.round(subtotal).toFixed(2)}</td>
-              </tr>
-              <tr>
-                <td className="border border-black p-2 font-bold">ภาษีมูลค่าเพิ่ม (Vat) 7%</td>
-                <td className="border border-black p-2 text-right">0</td>
-              </tr>
-              <tr>
-                <td className="border border-black p-2 font-bold">จำนวนเงินรวมทั้งสิ้น / Net Total</td>
-                <td className="border border-black p-2 text-right">{Math.round(subtotal).toFixed(2)}</td>
-              </tr>
-            </tbody>
-          </table>
+          {/* Row 4: เงื่อนไขการชำระ + ผู้อนุมัติ */}
+          <tr>
+            <td className="p-2 font-bold border border-black">เงื่อนไขการชำระเงิน</td>
+            <td className="p-2 border border-black">
+              {document.docType !== 'receipt' || document.customer?.pay_method === 'credit' ? (
+                <div>
+                  {companySettings.documentSettings?.paymentConditionText || 'รบกวนชําระเงินภายใน 7 วันหลังจากวางบิล'}
+                </div>
+              ) : <div>&nbsp;</div>}
+            </td>
+            <td className="p-2 font-bold border border-black">ผู้อนุมัติ</td>
+            <td className="p-2 border border-black">&nbsp;</td>
+          </tr>
 
-          <table className="w-full">
-            <tbody>
-              <tr>
-                <td className="border border-black p-2">ผู้อนุมัติ</td>
-              </tr>
-              <tr>
-                <td className="border border-black p-2">ผู้ส่งสินค้า</td>
-              </tr>
-              <tr>
-                <td className="border border-black p-2">ผู้รับสินค้า</td>
-              </tr>
-              <tr>
-                <td className="border border-black p-2 text-center">
-                  วันที่ &nbsp;&nbsp;............../............../................
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+          {/* Row 5: Empty + ผู้ส่งสินค้า */}
+          <tr>
+            <td className="p-2 border border-black" colSpan={2}>&nbsp;</td>
+            <td className="p-2 font-bold border border-black">ผู้ส่งสินค้า</td>
+            <td className="p-2 border border-black">&nbsp;</td>
+          </tr>
+
+          {/* Row 6: Empty + ผู้รับสินค้า */}
+          <tr>
+            <td className="p-2 border border-black" colSpan={2}>&nbsp;</td>
+            <td className="p-2 font-bold border border-black">ผู้รับสินค้า</td>
+            <td className="p-2 border border-black">&nbsp;</td>
+          </tr>
+
+          {/* Row 7: Empty + วันที่ */}
+          <tr>
+            <td className="p-2 border border-black" colSpan={2}>&nbsp;</td>
+            <td className="p-2 text-center border border-black" colSpan={2}>
+              วันที่ &nbsp;&nbsp;............../............../................
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 };
@@ -425,14 +404,14 @@ export const generateDocumentHTML = (document, companySettings, isPageBreak = fa
     <!-- Header -->
     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; padding-bottom: 10px;">
       <!-- Logo + Company Info - Left -->
-      <div style="display: flex; align-items: flex-start;">
-        <div style="width: ${companySettings.logo?.width || 64}px; height: ${companySettings.logo?.height || 64}px;  display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+      <div style="display: flex; align-items: center;">
+        <div style="width: ${companySettings.logo?.width || 80}px; height: ${companySettings.logo?.height || 80}px; display: flex; align-items: center; justify-content: center; margin-right: 16px;">
           ${companySettings.logo?.url
             ? `<img src="${companySettings.logo.url}" style="max-width: 100%; max-height: 100%; object-fit: contain;" alt="Logo" />`
             : '<span style="font-size: 12px; color: #6b7280;">LOGO</span>'
           }
         </div>
-        <div style="text-align: left;">
+        <div style="text-align: left; display: flex; flex-direction: column; justify-content: center; height: 80px;">
           <div style="font-size: 18px; font-weight: bold; margin-bottom: 4px;">${companySettings.companyName}</div>
           <div style="font-size: 12px; line-height: 1.3;">
             ${companySettings.address?.line1}<br/>
@@ -556,104 +535,77 @@ export const generateDocumentHTML = (document, companySettings, isPageBreak = fa
       </tbody>
     </table>
 
-    <!-- Bottom Section -->
-    <div style="display: flex; justify-content: space-between;">
-      <div style="flex: 1; ">
-        <table style="width: 100%; border: 1px solid #000; border-collapse: collapse;">
-          <tbody>
-            <tr>
-              <td style="padding: 8px; font-weight: bold;">หมายเหตุ</td>
-              <td style="padding: 8px;">${document.customer.name}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px; font-weight: bold;">จำนวนเงิน (ตัวอักษร)</td>
-              <td style="padding: 8px;">${textAmount}</td>
-            </tr>
-          </tbody>
-        </table>
+    <!-- Bottom Section - Combined Table -->
+    <table style="width: 100%; border: 1px solid #000; border-collapse: collapse; font-size: 12px;">
+      <tbody>
+        <!-- Row 1: หมายเหตุ + ยอดรวม -->
+        <tr>
+          <td style="padding: 8px; font-weight: bold; border: 1px solid #000; width: 20%;">หมายเหตุ</td>
+          <td style="padding: 8px; border: 1px solid #000; width: 35%;">${document.customer.name}</td>
+          <td style="padding: 8px; font-weight: bold; border: 1px solid #000; width: 25%;">รวมจำนวนเงิน</td>
+          <td style="padding: 8px; text-align: right; border: 1px solid #000; width: 20%;">${Math.round(subtotal).toFixed(2)}</td>
+        </tr>
 
-        <table style="width: 100%; border: 1px solid #000; border-collapse: collapse;">
-          <tbody>
-            <tr>
-              <td style="padding: 8px; font-size: 12px;">
-                <strong>ชำระโดย</strong>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding: 8px; font-size: 12px;">
-                ${document.docType === 'receipt'
-                  ? document.customer?.pay_method === 'cash'
-                    ? `<strong>เงินสด</strong>`
-                    : document.customer?.pay_method === 'transfer'
-                      ? `<div>
-                           โอนเงิน
-                         </div>`
-                      : `<div>
-                           <strong>เครดิต</strong> &nbsp;&nbsp;&nbsp; ${companySettings.documentSettings?.paymentTermsText || 'ตัดรอบวางบิลทุกวันที่ 15 ของเดือน'}<br/>
-                         </div>`
-                  : `<div>
-                       <strong>เครดิต</strong> &nbsp;&nbsp;&nbsp; ${companySettings.documentSettings?.paymentTermsText || 'ตัดรอบวางบิลทุกวันที่ 15 ของเดือน'}<br/>
-                     </div>`
-                }
-              </td>
-            </tr>
-            <tr>
-              <td style="padding: 8px; font-size: 12px;">&nbsp;</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px; font-size: 12px;">&nbsp;</td>
-            </tr>
-            <tr>
-              <td style="padding: 10px; font-size: 12px;">
-                ${document.docType !== 'receipt' || document.customer?.pay_method === 'credit'
-                  ? `<div>
-                       <strong>เงื่อนไขการชำระเงิน</strong> ${companySettings.documentSettings?.paymentConditionText || 'รบกวนชําระเงินภายใน 7 วันหลังจากวางบิล'}
-                     </div>`
-                  : '&nbsp;'
-                }
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+        <!-- Row 2: จำนวนเงิน (ตัวอักษร) + VAT -->
+        <tr>
+          <td style="padding: 8px; font-weight: bold; border: 1px solid #000;">จำนวนเงิน (ตัวอักษร)</td>
+          <td style="padding: 8px; border: 1px solid #000;">${textAmount}</td>
+          <td style="padding: 8px; font-weight: bold; border: 1px solid #000;">ภาษีมูลค่าเพิ่ม (Vat) 7%</td>
+          <td style="padding: 8px; text-align: right; border: 1px solid #000;">0</td>
+        </tr>
 
-      <div style="width: 320px;">
-        <table style="width: 100%; border: 1px solid #000; border-collapse: collapse;">
-          <tbody>
-            <tr style="border: 1px solid #000;">
-              <td style="padding: 8px; font-weight: bold;">รวมจำนวนเงิน</td>
-              <td style="padding: 8px; text-align: right;">${Math.round(subtotal).toFixed(2)}</td>
-            </tr>
-            <tr style="border: 1px solid #000;">
-              <td style="padding: 8px; font-weight: bold;">ภาษีมูลค่าเพิ่ม (Vat) 7%</td>
-              <td style="padding: 8px; text-align: right;">0</td>
-            </tr>
-            <tr style="border: 1px solid #000;">
-              <td style="padding: 8px; font-weight: bold;">จำนวนเงินรวมทั้งสิ้น / Net Total</td>
-              <td style="padding: 8px; text-align: right;">${Math.round(subtotal).toFixed(2)}</td>
-            </tr>
-          </tbody>
-        </table>
+        <!-- Row 3: ชำระโดย + Net Total -->
+        <tr>
+          <td style="padding: 8px; font-weight: bold; border: 1px solid #000;">ชำระโดย</td>
+          <td style="padding: 8px; border: 1px solid #000;">
+            ${document.docType === 'receipt'
+              ? document.customer?.pay_method === 'cash'
+                ? `<strong>เงินสด</strong>`
+                : document.customer?.pay_method === 'transfer'
+                  ? `<strong>โอนเงิน</strong>`
+                  : `<strong>เครดิต</strong> ${companySettings.documentSettings?.paymentTermsText || 'ตัดรอบวางบิลทุกวันที่ 15 ของเดือน'}`
+              : `<strong>เครดิต</strong> ${companySettings.documentSettings?.paymentTermsText || 'ตัดรอบวางบิลทุกวันที่ 15 ของเดือน'}`
+            }
+          </td>
+          <td style="padding: 8px; font-weight: bold; border: 1px solid #000;">จำนวนเงินรวมทั้งสิ้น / Net Total</td>
+          <td style="padding: 8px; text-align: right; border: 1px solid #000;">${Math.round(subtotal).toFixed(2)}</td>
+        </tr>
 
-        <table style="width: 100%;  border: 1px solid #000; border-collapse: collapse;">
-          <tbody>
-            <tr>
-              <td style="padding: 8px;  border: 1px solid #000;">ผู้อนุมัติ</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px;  border: 1px solid #000;">ผู้ส่งสินค้า</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px;  border: 1px solid #000;">ผู้รับสินค้า</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px;  border: 1px solid #000; text-align: center;">
-                วันที่ &nbsp;&nbsp;............../............../................
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+        <!-- Row 4: เงื่อนไขการชำระ + ผู้อนุมัติ -->
+        <tr>
+          <td style="padding: 8px; font-weight: bold; border: 1px solid #000;">เงื่อนไขการชำระเงิน</td>
+          <td style="padding: 8px; border: 1px solid #000;">
+            ${document.docType !== 'receipt' || document.customer?.pay_method === 'credit'
+              ? `${companySettings.documentSettings?.paymentConditionText || 'รบกวนชําระเงินภายใน 7 วันหลังจากวางบิล'}`
+              : '&nbsp;'
+            }
+          </td>
+          <td style="padding: 8px; font-weight: bold; border: 1px solid #000;">ผู้อนุมัติ</td>
+          <td style="padding: 8px; border: 1px solid #000;">&nbsp;</td>
+        </tr>
+
+        <!-- Row 5: Empty + ผู้ส่งสินค้า -->
+        <tr>
+          <td style="padding: 8px; border: 1px solid #000;" colspan="2">&nbsp;</td>
+          <td style="padding: 8px; font-weight: bold; border: 1px solid #000;">ผู้ส่งสินค้า</td>
+          <td style="padding: 8px; border: 1px solid #000;">&nbsp;</td>
+        </tr>
+
+        <!-- Row 6: Empty + ผู้รับสินค้า -->
+        <tr>
+          <td style="padding: 8px; border: 1px solid #000;" colspan="2">&nbsp;</td>
+          <td style="padding: 8px; font-weight: bold; border: 1px solid #000;">ผู้รับสินค้า</td>
+          <td style="padding: 8px; border: 1px solid #000;">&nbsp;</td>
+        </tr>
+
+        <!-- Row 7: Empty + วันที่ -->
+        <tr>
+          <td style="padding: 8px; border: 1px solid #000;" colspan="2">&nbsp;</td>
+          <td style="padding: 8px; text-align: center; border: 1px solid #000;" colspan="2">
+            วันที่ &nbsp;&nbsp;............../............../................
+          </td>
+        </tr>
+      </tbody>
+    </table>
   `;
 };

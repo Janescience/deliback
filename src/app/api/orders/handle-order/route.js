@@ -4,6 +4,7 @@ import Order from '@/models/Order';
 import OrderDetail from '@/models/OrderDetail';
 import Customer from '@/models/Customer';
 import Vegetable from '@/models/Vegetable';
+import UserOrderHistory from '@/models/UserOrderHistory';
 import { broadcastOrderUpdate } from '../stream/route';
 
 // CORS headers
@@ -157,6 +158,8 @@ export async function POST(request) {
     order.total = totalAmount;
     await order.save(); // This will trigger pre('save') hook
 
+    // Update user order history (shop names)
+    await updateUserOrderHistory(userId, user.trim(), payMethod);
 
     // Get customer info for broadcast
     const customerInfo = await Customer.findById(customerId);
@@ -230,4 +233,57 @@ function mapPaymentMethod(thaiMethod) {
     'เครดิต': 'credit'
   };
   return mapping[thaiMethod] || 'cash';
+}
+
+async function updateUserOrderHistory(userId, shopName, payMethod) {
+  try {
+    // Convert payMethod back to Thai
+    const thaiPayMethod = reverseMapPaymentMethod(payMethod);
+
+    // Find existing history for this user
+    let userHistory = await UserOrderHistory.findOne({ userId });
+
+    if (!userHistory) {
+      // Create new history record
+      userHistory = await UserOrderHistory.create({
+        userId,
+        shops: [{
+          shopName,
+          payMethod: thaiPayMethod,
+          userName: shopName // Using shopName as userName for now
+        }]
+      });
+    } else {
+      // Check if this shop already exists (regardless of payMethod)
+      const existingShopIndex = userHistory.shops.findIndex(shop =>
+        shop.shopName === shopName
+      );
+
+      if (existingShopIndex >= 0) {
+        // Update existing shop's payment method
+        userHistory.shops[existingShopIndex].payMethod = thaiPayMethod;
+        await userHistory.save();
+      } else {
+        // Add new shop
+        userHistory.shops.push({
+          shopName,
+          payMethod: thaiPayMethod,
+          userName: shopName // Using shopName as userName for now
+        });
+        await userHistory.save();
+      }
+    }
+  } catch (error) {
+    console.error('Error updating user order history:', error);
+    // Don't throw error to prevent breaking the main order flow
+  }
+}
+
+function reverseMapPaymentMethod(englishMethod) {
+  const mapping = {
+    'cash': 'เงินสด',
+    'transfer': 'โอนเงิน',
+    'credit': 'เครดิต'
+  };
+  return mapping[englishMethod] || 'เงินสด';
 }
