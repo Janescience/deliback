@@ -92,10 +92,13 @@ export default function PaymentsPage() {
   };
 
 
-  const searchActivityHistory = async () => {
+  const searchActivityHistory = async (customAction = null, customCustomerId = null) => {
     const params = {};
-    if (activitySearchForm.action) params.action = activitySearchForm.action;
-    if (activitySearchForm.customerId) params.customer_id = activitySearchForm.customerId;
+    const action = customAction !== null ? customAction : activitySearchForm.action;
+    const customerId = customCustomerId !== null ? customCustomerId : activitySearchForm.customerId;
+
+    if (action) params.action = action;
+    if (customerId) params.customer_id = customerId;
 
     await fetchActivityHistory(params);
   };
@@ -111,9 +114,15 @@ export default function PaymentsPage() {
     return action;
   };
 
-  const searchPaidOrders = async () => {
-    if (!paidSearchForm.customerId || !paidSearchForm.month) {
-      toast.error('กรุณาเลือกลูกค้าและเดือนที่ต้องการค้นหา');
+  const searchPaidOrders = async (customCustomerId = null, customMonth = null) => {
+    const customerId = customCustomerId !== null ? customCustomerId : paidSearchForm.customerId;
+    const month = customMonth !== null ? customMonth : paidSearchForm.month;
+
+    if (!customerId || !month) {
+      // Don't show error if auto-triggered, just return
+      if (customCustomerId === null && customMonth === null) {
+        toast.error('กรุณาเลือกลูกค้าและเดือนที่ต้องการค้นหา');
+      }
       return;
     }
 
@@ -121,8 +130,8 @@ export default function PaymentsPage() {
       setLoadingPaidOrders(true);
       const response = await axios.get('/api/payments/paid', {
         params: {
-          customerId: paidSearchForm.customerId,
-          month: paidSearchForm.month
+          customerId: customerId,
+          month: month
         }
       });
       setPaidOrders(response.data.orders || []);
@@ -466,23 +475,23 @@ export default function PaymentsPage() {
                 {/* Summary Cards - Responsive */}
                 <div className="mb-6">
               {/* Mobile Summary - Compact */}
-              <div className="lg:hidden mb-4 bg-gray-50 rounded-lg p-4">
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div className="bg-white rounded-lg p-4">
-                    <div className="text-sm text-gray-500 mb-2">เครดิต</div>
-                    <div className="text-lg font-medium text-black">
+              <div className="lg:hidden mb-4 bg-gray-50 rounded p-4">
+                <div className="grid grid-cols-2 gap-3 text-center">
+                  <div className="bg-white rounded p-3 border border-gray-100">
+                    <div className="text-xs text-gray-500 mb-1">เครดิต</div>
+                    <div className="text-base font-light text-black">
                       {formatMoney(getSummaryData(creditCustomers).totalAmount)} บ.
                     </div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-xs text-gray-600">
                       {getSummaryData(creditCustomers).customerCount} ลูกค้า
                     </div>
                   </div>
-                  <div className="bg-white rounded-lg p-4">
-                    <div className="text-sm text-gray-500 mb-2">โอนเงิน</div>
-                    <div className="text-lg font-medium text-black">
+                  <div className="bg-white rounded p-3 border border-gray-100">
+                    <div className="text-xs text-gray-500 mb-1">โอนเงิน</div>
+                    <div className="text-base font-light text-black">
                       {formatMoney(getSummaryData(transferCustomers).totalAmount)} บ.
                     </div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-xs text-gray-600">
                       {getSummaryData(transferCustomers).customerCount} ลูกค้า
                     </div>
                   </div>
@@ -491,45 +500,43 @@ export default function PaymentsPage() {
 
               {/* Desktop Summary - Full */}
               <div className="hidden lg:block">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Credit Summary */}
-                <div className="bg-white border border-gray-100 rounded-lg p-6 shadow-sm">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center">
-                      <CreditCard className="w-6 h-6 text-gray-700 mr-3" />
-                      <h3 className="text-lg font-extralight text-black">สรุปเครดิต</h3>
-                    </div>
+                <div className="bg-white border border-gray-100 rounded p-4">
+                  <div className="flex items-center mb-3">
+                    <CreditCard className="w-5 h-5 text-gray-600 mr-2" />
+                    <h3 className="text-base font-light text-black">สรุปเครดิต</h3>
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-500">ยอดค้างทั้งหมด</span>
-                      <span className="text-xl font-extralight text-black">
+                      <span className="text-xs text-gray-500">ยอดค้างทั้งหมด</span>
+                      <span className="text-base font-light text-black">
                         {formatMoney(getSummaryData(creditCustomers).totalAmount)} บาท
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-500">จำนวนลูกค้า</span>
-                      <span className="text-lg font-extralight text-black">
+                      <span className="text-xs text-gray-500">จำนวนลูกค้า</span>
+                      <span className="text-sm font-light text-black">
                         {getSummaryData(creditCustomers).customerCount} ลูกค้า
                       </span>
                     </div>
                     {getSummaryData(creditCustomers).oldestDate && (
                       <>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-500">ค้างตั้งแต่</span>
-                          <span className="text-sm font-extralight text-black">
+                          <span className="text-xs text-gray-500">ค้างตั้งแต่</span>
+                          <span className="text-xs font-light text-black">
                             {getSummaryData(creditCustomers).oldestDate.toLocaleDateString('th-TH')}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-500">ถึงวันที่</span>
-                          <span className="text-sm font-extralight text-black">
+                          <span className="text-xs text-gray-500">ถึงวันที่</span>
+                          <span className="text-xs font-light text-black">
                             {getSummaryData(creditCustomers).newestDate?.toLocaleDateString('th-TH')}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-500">จำนวนรอบบิล</span>
-                          <span className="text-sm font-extralight text-black">
+                          <span className="text-xs text-gray-500">จำนวนรอบบิล</span>
+                          <span className="text-xs font-light text-black">
                             {getSummaryData(creditCustomers).totalBillingCycles} รอบ
                           </span>
                         </div>
@@ -539,43 +546,41 @@ export default function PaymentsPage() {
                 </div>
 
                 {/* Transfer Summary */}
-                <div className="bg-white border border-gray-100 rounded-lg p-6 shadow-sm">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center">
-                      <ArrowRightLeft className="w-6 h-6 text-gray-700 mr-3" />
-                      <h3 className="text-lg font-extralight text-black">สรุปเงินโอน</h3>
-                    </div>
+                <div className="bg-white border border-gray-100 rounded p-4">
+                  <div className="flex items-center mb-3">
+                    <ArrowRightLeft className="w-5 h-5 text-gray-600 mr-2" />
+                    <h3 className="text-base font-light text-black">สรุปเงินโอน</h3>
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-500">ยอดค้างทั้งหมด</span>
-                      <span className="text-xl font-extralight text-black">
+                      <span className="text-xs text-gray-500">ยอดค้างทั้งหมด</span>
+                      <span className="text-base font-light text-black">
                         {formatMoney(getSummaryData(transferCustomers).totalAmount)} บาท
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-500">จำนวนลูกค้า</span>
-                      <span className="text-lg font-extralight text-black">
+                      <span className="text-xs text-gray-500">จำนวนลูกค้า</span>
+                      <span className="text-sm font-light text-black">
                         {getSummaryData(transferCustomers).customerCount} ลูกค้า
                       </span>
                     </div>
                     {getSummaryData(transferCustomers).oldestDate && (
                       <>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-500">ค้างตั้งแต่</span>
-                          <span className="text-sm font-extralight text-black">
+                          <span className="text-xs text-gray-500">ค้างตั้งแต่</span>
+                          <span className="text-xs font-light text-black">
                             {getSummaryData(transferCustomers).oldestDate.toLocaleDateString('th-TH')}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-500">ถึงวันที่</span>
-                          <span className="text-sm font-extralight text-black">
+                          <span className="text-xs text-gray-500">ถึงวันที่</span>
+                          <span className="text-xs font-light text-black">
                             {getSummaryData(transferCustomers).newestDate?.toLocaleDateString('th-TH')}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-500">จำนวนรอบบิล</span>
-                          <span className="text-sm font-extralight text-black">
+                          <span className="text-xs text-gray-500">จำนวนรอบบิล</span>
+                          <span className="text-xs font-light text-black">
                             {getSummaryData(transferCustomers).totalBillingCycles} รอบ
                           </span>
                         </div>
@@ -591,17 +596,17 @@ export default function PaymentsPage() {
                 {!loading && (
                   <div className="space-y-3">
                     {/* Credit Section */}
-                    <div className="bg-white border border-gray-100 rounded-lg overflow-hidden shadow-sm">
+                    <div className="bg-white border border-gray-100 rounded overflow-hidden">
                       <div
-                        className="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50 border-b border-gray-100"
+                        className="flex justify-between items-center p-3 cursor-pointer hover:bg-gray-50"
                         onClick={() => toggleSection('credit')}
                       >
                         <div className="flex items-center">
-                          <span className="mr-3 text-gray-700">
-                            {expandedSection === 'credit' ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                          <span className="mr-2 text-gray-600">
+                            {expandedSection === 'credit' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                           </span>
-                          <h3 className="text-lg font-extralight text-black">เครดิต</h3>
-                          <span className="ml-3 px-3 py-1 bg-gray-100 text-black rounded-full text-sm font-extralight">
+                          <h3 className="text-sm font-light text-black">เครดิต</h3>
+                          <span className="ml-2 px-2 py-1 bg-gray-50 text-black rounded text-xs font-light">
                             {creditCustomers.length} ลูกค้า • {formatMoney(creditCustomers.reduce((total, customer) => total + customer.totalUnpaid, 0))} บาท
                           </span>
                         </div>
@@ -632,17 +637,17 @@ export default function PaymentsPage() {
                     </div>
 
                     {/* Transfer Section */}
-                    <div className="bg-white border border-gray-100 rounded-lg overflow-hidden shadow-sm">
+                    <div className="bg-white border border-gray-100 rounded overflow-hidden">
                       <div
-                        className="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50 border-b border-gray-100"
+                        className="flex justify-between items-center p-3 cursor-pointer hover:bg-gray-50"
                         onClick={() => toggleSection('transfer')}
                       >
                         <div className="flex items-center">
-                          <span className="mr-3 text-gray-700">
-                            {expandedSection === 'transfer' ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                          <span className="mr-2 text-gray-600">
+                            {expandedSection === 'transfer' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                           </span>
-                          <h3 className="text-lg font-extralight text-black">เงินโอน</h3>
-                          <span className="ml-3 px-3 py-1 bg-gray-100 text-black rounded-full text-sm font-extralight">
+                          <h3 className="text-sm font-light text-black">เงินโอน</h3>
+                          <span className="ml-2 px-2 py-1 bg-gray-50 text-black rounded text-xs font-light">
                             {transferCustomers.length} ลูกค้า • {formatMoney(transferCustomers.reduce((total, customer) => total + customer.totalUnpaid, 0))} บาท
                           </span>
                         </div>
@@ -678,20 +683,27 @@ export default function PaymentsPage() {
 
         {/* Tab 2: Payment History */}
             {activeTab === 'payment-history' && (
-              <div className="space-y-6">
-                <div className="bg-white border border-gray-100 rounded-lg overflow-hidden shadow-sm">
-                  <div className="p-6">
-                    <h3 className="text-lg text-black mb-4">ค้นหารายการที่ชำระแล้ว</h3>
+              <div className="space-y-4">
+                <div className="bg-white border border-gray-100 rounded overflow-hidden">
+                  <div className="p-4">
+                    <h3 className="text-base font-light text-black mb-3">ค้นหารายการที่ชำระแล้ว</h3>
 
                     {/* Search Form */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-xs font-light text-gray-600 mb-1">
                           เลือกลูกค้า
                         </label>
                         <select
                           value={paidSearchForm.customerId}
-                          onChange={(e) => setPaidSearchForm(prev => ({ ...prev, customerId: e.target.value }))}
+                          onChange={(e) => {
+                            const newCustomerId = e.target.value;
+                            setPaidSearchForm(prev => ({ ...prev, customerId: newCustomerId }));
+                            // Auto search when both fields are filled
+                            if (newCustomerId && paidSearchForm.month) {
+                              searchPaidOrders(newCustomerId, paidSearchForm.month);
+                            }
+                          }}
                           className="w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400 transition-colors text-black text-sm"
                         >
                           <option value="">-- เลือกลูกค้า --</option>
@@ -704,26 +716,22 @@ export default function PaymentsPage() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-xs font-light text-gray-600 mb-1">
                           เลือกเดือน
                         </label>
                         <input
                           type="month"
                           value={paidSearchForm.month}
-                          onChange={(e) => setPaidSearchForm(prev => ({ ...prev, month: e.target.value }))}
+                          onChange={(e) => {
+                            const newMonth = e.target.value;
+                            setPaidSearchForm(prev => ({ ...prev, month: newMonth }));
+                            // Auto search when both fields are filled
+                            if (paidSearchForm.customerId && newMonth) {
+                              searchPaidOrders(paidSearchForm.customerId, newMonth);
+                            }
+                          }}
                           className="w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400 transition-colors text-black text-sm"
                         />
-                      </div>
-
-                      <div className="flex items-end">
-                        <button
-                          onClick={searchPaidOrders}
-                          disabled={loadingPaidOrders}
-                          className="w-full px-4 py-2 bg-black text-white rounded hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center"
-                        >
-                          <Search className="w-4 h-4 mr-2" />
-                          {loadingPaidOrders ? 'กำลังค้นหา...' : 'ค้นหา'}
-                        </button>
                       </div>
                     </div>
 
@@ -884,20 +892,23 @@ export default function PaymentsPage() {
 
             {/* Tab 3: Activity History */}
             {activeTab === 'activity-history' && (
-              <div className="space-y-6">
-                <div className="bg-white border border-gray-100 rounded-lg overflow-hidden shadow-sm">
-                  <div className="p-6">
-                    
-
+              <div className="space-y-4">
+                <div className="bg-white border border-gray-100 rounded overflow-hidden">
+                  <div className="p-4">
                     {/* Search Form */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-xs font-light text-gray-600 mb-1">
                           การดำเนินการ
                         </label>
                         <select
                           value={activitySearchForm.action}
-                          onChange={(e) => setActivitySearchForm(prev => ({ ...prev, action: e.target.value }))}
+                          onChange={(e) => {
+                            const newAction = e.target.value;
+                            setActivitySearchForm(prev => ({ ...prev, action: newAction }));
+                            // Auto search immediately when action changes
+                            searchActivityHistory(newAction, activitySearchForm.customerId);
+                          }}
                           className="w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400 transition-colors text-black text-sm"
                         >
                           <option value="">-- ทั้งหมด --</option>
@@ -907,12 +918,17 @@ export default function PaymentsPage() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-xs font-light text-gray-600 mb-1">
                           เลือกลูกค้า
                         </label>
                         <select
                           value={activitySearchForm.customerId}
-                          onChange={(e) => setActivitySearchForm(prev => ({ ...prev, customerId: e.target.value }))}
+                          onChange={(e) => {
+                            const newCustomerId = e.target.value;
+                            setActivitySearchForm(prev => ({ ...prev, customerId: newCustomerId }));
+                            // Auto search immediately when customer changes
+                            searchActivityHistory(activitySearchForm.action, newCustomerId);
+                          }}
                           className="w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400 transition-colors text-black text-sm"
                         >
                           <option value="">-- ทั้งหมด --</option>
@@ -922,17 +938,6 @@ export default function PaymentsPage() {
                             </option>
                           ))}
                         </select>
-                      </div>
-
-                      <div className="flex items-end">
-                        <button
-                          onClick={searchActivityHistory}
-                          disabled={loadingActivity}
-                          className="w-full px-4 py-2 bg-black text-white rounded hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center"
-                        >
-                          <Search className="w-4 h-4 mr-2" />
-                          {loadingActivity ? 'กำลังค้นหา...' : 'ค้นหา'}
-                        </button>
                       </div>
                     </div>
 
@@ -946,26 +951,26 @@ export default function PaymentsPage() {
                     ) : (
                       <>
                         {/* Desktop Table */}
-                        <div className="hidden lg:block overflow-hidden border border-gray-200 rounded-lg">
+                        <div className="hidden lg:block overflow-hidden border border-gray-200 rounded">
                           <table className="w-full">
                             <thead className="bg-gray-50">
                               <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-3 py-2 text-left text-xs font-light text-gray-600">
                                   วันที่/เวลาดำเนินการ
                                 </th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-3 py-2 text-left text-xs font-light text-gray-600">
                                   การดำเนินการ
                                 </th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-3 py-2 text-left text-xs font-light text-gray-600">
                                   ลูกค้า
                                 </th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-3 py-2 text-left text-xs font-light text-gray-600">
                                   วันที่จัดส่ง
                                 </th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-3 py-2 text-left text-xs font-light text-gray-600">
                                   รายการ
                                 </th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-3 py-2 text-left text-xs font-light text-gray-600">
                                   ยอดเงิน
                                 </th>
                               </tr>
@@ -991,7 +996,7 @@ export default function PaymentsPage() {
 
                                 return (
                                   <tr key={log._id} className="hover:bg-gray-50">
-                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-900">
                                       {createdAt ? new Date(createdAt).toLocaleDateString('th-TH', {
                                         year: 'numeric',
                                         month: 'short',
@@ -1000,7 +1005,7 @@ export default function PaymentsPage() {
                                         minute: '2-digit'
                                       }) : 'ไม่ระบุวันที่'}
                                     </td>
-                                    <td className="px-4 py-4 whitespace-nowrap">
+                                    <td className="px-3 py-3 whitespace-nowrap">
                                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                                         log.action === 'mark_paid'
                                           ? 'bg-green-100 text-green-800'
@@ -1009,7 +1014,7 @@ export default function PaymentsPage() {
                                         {getActionText(log.action)}
                                       </span>
                                     </td>
-                                    <td className="px-4 py-4 text-sm text-gray-900">
+                                    <td className="px-3 py-3 text-xs text-gray-900">
                                       <div>
                                         <div className="font-medium">{customer?.name || 'ไม่ระบุ'}</div>
                                         {customer?.company_name && (
@@ -1017,10 +1022,10 @@ export default function PaymentsPage() {
                                         )}
                                       </div>
                                     </td>
-                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-900">
                                       {deliveryDateText}
                                     </td>
-                                    <td className="px-4 py-4 text-sm text-gray-900">
+                                    <td className="px-3 py-3 text-xs text-gray-900">
                                       {orders.length > 0 ? (
                                         <div className="space-y-1">
                                           {orders.slice(0, 3).map((order, idx) => (
@@ -1042,7 +1047,7 @@ export default function PaymentsPage() {
                                         <span className="text-gray-500">{orderCount} รายการ</span>
                                       )}
                                     </td>
-                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-900">
                                       {formatMoney(totalAmount)} บาท
                                     </td>
                                   </tr>
@@ -1073,7 +1078,7 @@ export default function PaymentsPage() {
                             }
 
                             return (
-                              <div key={log._id} className="bg-white border border-gray-200 rounded-lg p-4">
+                              <div key={log._id} className="bg-white border border-gray-200 rounded p-3">
                                 <div className="flex justify-between items-start mb-3">
                                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                                     log.action === 'mark_paid'
@@ -1092,20 +1097,20 @@ export default function PaymentsPage() {
                                   </span>
                                 </div>
 
-                                <div className="space-y-2">
-                                  <div className="text-sm">
-                                    <span className="font-medium text-gray-900">{customer?.name || 'ไม่ระบุ'}</span>
+                                <div className="space-y-1">
+                                  <div className="text-xs">
+                                    <span className="font-light text-gray-900">{customer?.name || 'ไม่ระบุ'}</span>
                                     {customer?.company_name && (
-                                      <span className="text-gray-500 text-xs block">{customer.company_name}</span>
+                                      <span className="text-gray-500 text-xs block font-light">{customer.company_name}</span>
                                     )}
                                   </div>
 
-                                  <div className="text-sm">
+                                  <div className="text-xs">
                                     <span className="text-gray-500">วันที่จัดส่ง: </span>
                                     <span className="text-gray-700">{deliveryDateText}</span>
                                   </div>
 
-                                  <div className="text-sm">
+                                  <div className="text-xs">
                                     <span className="text-gray-500">รายการสินค้า: </span>
                                     {orders.length > 0 ? (
                                       <div className="mt-1 space-y-1">
@@ -1133,9 +1138,9 @@ export default function PaymentsPage() {
                                     )}
                                   </div>
 
-                                  <div className="flex justify-between text-sm pt-2 border-t border-gray-200">
+                                  <div className="flex justify-between text-xs pt-1 border-t border-gray-200">
                                     <span className="text-gray-500">ยอดเงิน</span>
-                                    <span className="font-medium text-gray-900">{formatMoney(totalAmount)} บาท</span>
+                                    <span className="font-light text-gray-900">{formatMoney(totalAmount)} บาท</span>
                                   </div>
                                 </div>
                               </div>

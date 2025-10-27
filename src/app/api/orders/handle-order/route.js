@@ -202,7 +202,20 @@ export async function POST(request) {
       console.error('Failed to broadcast update:', broadcastError);
     }
 
-    return NextResponse.json({ 
+    // Send LINE notification
+    try {
+      await sendOrderMessageToLineUser({
+        order: orderItems,
+        user: user,
+        payMethod: reverseMapPaymentMethod(payMethod),
+        deliveryDate: deliveryDate,
+        userId: userId
+      });
+    } catch (lineError) {
+      console.error('Failed to send LINE notification:', lineError);
+    }
+
+    return NextResponse.json({
       status: 'success',
       orderId: order._id,
       message: 'Order processed successfully',
@@ -286,4 +299,212 @@ function reverseMapPaymentMethod(englishMethod) {
     'credit': 'เครดิต'
   };
   return mapping[englishMethod] || 'เงินสด';
+}
+
+// LINE Bot Functions
+async function sendOrderMessageToLineUser(data) {
+  try {
+    const newOrders = data.order;
+    const user = data.user;
+    const shop = resolveShopName(user);
+    const payMethod = data.payMethod;
+    const deliveryDate = data.deliveryDate;
+    const userId = data.userId;
+
+    // Skip LINE notification for ADMIN orders
+    if (userId === 'ADMIN') {
+      console.log('Skipping LINE notification for ADMIN order');
+      return;
+    }
+
+    // รวมยอด
+    let totalAmount = 0;
+    let totalPrice = 0;
+    const summaryList = [];
+
+    for (const item of newOrders) {
+      const name = item.name;
+      const amount = parseFloat(item.amount);
+      const subtotal = parseFloat(item.subtotal);
+
+      totalAmount += amount;
+      totalPrice += subtotal;
+
+      summaryList.push({
+        type: "box",
+        layout: "horizontal",
+        contents: [
+          {
+            type: "text",
+            text: name,
+            size: "sm",
+            color: "#000000",
+            flex: 4
+          },
+          {
+            type: "text",
+            text: `${amount.toFixed(2)} กก.`,
+            size: "sm",
+            color: "#555555",
+            align: "end",
+            flex: 3
+          },
+          {
+            type: "text",
+            text: `${subtotal.toLocaleString("th-TH", { minimumFractionDigits: 0 })} บ.`,
+            size: "sm",
+            color: "#000000",
+            align: "end",
+            flex: 3
+          }
+        ]
+      });
+    }
+
+    const flexMessage = {
+      type: "flex",
+      altText: `สั่งผักเรียบร้อยแล้ว`,
+      contents: {
+        type: "bubble",
+        body: {
+          type: "box",
+          layout: "vertical",
+          spacing: "md",
+          contents: [
+            {
+              type: "text",
+              text: "สั่งผักเรียบร้อยแล้ว",
+              weight: "bold",
+              size: "lg",
+              color: "#1DB446",
+              wrap: true
+            },
+            {
+              type: "text",
+              text: `ร้าน: ${shop}`,
+              size: "sm",
+              color: "#555555",
+              wrap: true
+            },
+            {
+              type: "text",
+              text: `การชำระเงิน: ${payMethod}`,
+              size: "sm",
+              color: "#555555",
+              wrap: true
+            },
+            {
+              type: "text",
+              text: `วันที่จัดส่ง: ${formatDateThai(deliveryDate)}`,
+              size: "sm",
+              color: "#555555",
+              wrap: true
+            },
+            {
+              "type": "separator",
+              "margin": "md"
+            },
+            {
+              type: "box",
+              layout: "vertical",
+              spacing: "sm",
+              margin: "md",
+              contents: summaryList
+            },
+            {
+              "type": "separator",
+              "margin": "md"
+            },
+            {
+              type: "box",
+              layout: "horizontal",
+              contents: [
+                {
+                  type: "text",
+                  text: `รวม`,
+                  weight: "bold",
+                  size: "sm",
+                  flex: 4
+                },
+                {
+                  type: "text",
+                  text: `${totalAmount.toFixed(2)} กก.`,
+                  weight: "bold",
+                  align: "end",
+                  size: "sm",
+                  flex: 3
+                },
+                {
+                  type: "text",
+                  text: `${totalPrice.toLocaleString("th-TH", { minimumFractionDigits: 0 })} บ.`,
+                  weight: "bold",
+                  align: "end",
+                  size: "sm",
+                  flex: 3
+                }
+              ]
+            }
+          ]
+        }
+      }
+    };
+
+    // ส่งกลับหา User
+    await pushFlexMessage(userId, flexMessage);
+  } catch (err) {
+    console.error("❌ Error in sendOrderMessageToLineUser:", err);
+  }
+}
+
+async function pushFlexMessage(id, message) {
+  try {
+    const url = "https://api.line.me/v2/bot/message/push";
+    console.log("📬 pushFlexMessage id:", id);
+
+    const payload = {
+      to: id,
+      messages: [message]
+    };
+
+    const options = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": process.env.LINE_CHANNEL_ACCESS_TOKEN
+      },
+      body: JSON.stringify(payload)
+    };
+
+    const response = await fetch(url, options);
+    const result = await response.text();
+    console.log("📬 pushFlexMessage response:", result);
+
+    if (!response.ok) {
+      console.error("LINE API Error:", response.status, result);
+    }
+  } catch (error) {
+    console.error("❌ Error in pushFlexMessage:", error);
+  }
+}
+
+function resolveShopName(user) {
+  // Add your shop name resolution logic here
+  // This could be based on user name or some mapping
+  return user || "ไม่ระบุร้าน";
+}
+
+function formatDateThai(dateString) {
+  try {
+    const date = new Date(dateString);
+    const options = {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'long'
+    };
+    return date.toLocaleDateString('th-TH', options);
+  } catch (error) {
+    console.error("Error formatting date:", error);
+    return dateString;
+  }
 }
