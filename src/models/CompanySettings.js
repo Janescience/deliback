@@ -203,8 +203,7 @@ const companySettingsSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Create index for userId
-companySettingsSchema.index({ userId: 1 });
+// Index for userId is already created by unique: true
 
 // Static method to get settings for a user (with fallback to default)
 companySettingsSchema.statics.getSettings = async function(userId = 'default') {
