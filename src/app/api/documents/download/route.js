@@ -306,12 +306,8 @@ async function generatePDF(document, companySettings) {
       </html>
     `;
 
-    // Check if we should skip Puppeteer in production due to known issues
-    const shouldUsePuppeteer = process.env.NODE_ENV !== 'production' || process.env.FORCE_PUPPETEER === 'true';
-
-    if (shouldUsePuppeteer) {
-      // Try Puppeteer first
-      try {
+    // Try Puppeteer first, with fallback to jsPDF if it fails
+    try {
         // Launch Puppeteer to convert HTML to PDF
         let browser;
 
@@ -378,18 +374,19 @@ async function generatePDF(document, companySettings) {
 
       return pdfBuffer;
 
-      } catch (puppeteerError) {
-        console.error('Puppeteer PDF generation failed:', puppeteerError.message);
-        console.error('Error stack:', puppeteerError.stack);
-        console.error('Falling back to jsPDF generation...');
-      }
-    } else {
-      console.log('Skipping Puppeteer in production, using jsPDF directly');
+    } catch (puppeteerError) {
+      console.error('Puppeteer PDF generation failed:', puppeteerError.message);
+      console.error('Error stack:', puppeteerError.stack);
+      console.error('Falling back to jsPDF generation...');
     }
 
-    // Use jsPDF as fallback with better compatibility
+    // Use jsPDF as fallback - create a more comprehensive document
     try {
         const { jsPDF } = require('jspdf');
+
+
+        // Try to parse the HTML and extract structured data, or fall back to simple format
+        console.log('Creating enhanced jsPDF document...');
 
         const doc = new jsPDF({
           orientation: 'portrait',
@@ -401,42 +398,99 @@ async function generatePDF(document, companySettings) {
         // Set font for better compatibility
         doc.setFont('helvetica');
 
-        // Add title
+        // Company header
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text(companySettings.companyName || 'Company', 105, 20, { align: 'center' });
+
+        // Company details
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        if (companySettings.address?.line1) {
+          doc.text(companySettings.address.line1, 105, 28, { align: 'center' });
+        }
+        if (companySettings.address?.line2) {
+          doc.text(companySettings.address.line2, 105, 32, { align: 'center' });
+        }
+        if (companySettings.telephone) {
+          doc.text(`Tel: ${companySettings.telephone}`, 105, 36, { align: 'center' });
+        }
+        if (companySettings.taxId) {
+          doc.text(`Tax ID: ${companySettings.taxId}`, 105, 40, { align: 'center' });
+        }
+
+        // Document title
         doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
-        const title = document.docType === 'receipt' ? 'Receipt' :
-                     document.docType === 'billing' ? 'Invoice' : 'Delivery Note';
-        doc.text(title, 105, 20, { align: 'center' });
+        const thaiTitle = document.docType === 'receipt' ? 'ใบเสร็จ' :
+                         document.docType === 'billing' ? 'ใบวางบิล' : 'ใบส่งสินค้า';
+        const englishTitle = document.docType === 'receipt' ? 'Receipt' :
+                            document.docType === 'billing' ? 'Invoice' : 'Delivery Note';
+        doc.text(`${thaiTitle} / ${englishTitle}`, 105, 55, { align: 'center' });
 
-        // Add document info
-        doc.setFontSize(12);
+        // Document info table
+        doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
-        doc.text(`Document Number: ${document.docNumber}`, 20, 40);
-        doc.text(`Customer: ${document.customer.name}`, 20, 50);
-        doc.text(`Date: ${new Date(document.date).toLocaleDateString()}`, 20, 60);
-        doc.text(`Total Amount: ${document.totalAmount.toFixed(2)} THB`, 20, 70);
+        let yPos = 75;
 
-        // Add items as simple text if available
+        // Left column
+        doc.text('เลขที่เอกสาร / Document No:', 20, yPos);
+        doc.text(document.docNumber || 'N/A', 75, yPos);
+        yPos += 6;
+
+        doc.text('วันที่ / Date:', 20, yPos);
+        doc.text(new Date(document.date).toLocaleDateString('th-TH'), 75, yPos);
+        yPos += 6;
+
+        // Customer info
+        doc.text('ลูกค้า / Customer:', 20, yPos);
+        doc.text(document.customer?.name || 'N/A', 75, yPos);
+        yPos += 6;
+
+        if (document.customer?.address) {
+          doc.text('ที่อยู่ / Address:', 20, yPos);
+          const address = document.customer.address;
+          doc.text(address, 75, yPos, { maxWidth: 100 });
+          yPos += 12;
+        }
+
+        // Items table header
+        yPos += 10;
+        doc.setFont('helvetica', 'bold');
+        doc.text('รายการ / Items', 20, yPos);
+        doc.text('จำนวน', 120, yPos);
+        doc.text('ราคา/หน่วย', 140, yPos);
+        doc.text('รวม', 170, yPos);
+        yPos += 8;
+
+        // Draw line under header
+        doc.line(20, yPos - 2, 190, yPos - 2);
+
+        // Items
+        doc.setFont('helvetica', 'normal');
         if (document.items && document.items.length > 0) {
-          let yPos = 80;
-          doc.setFont('helvetica', 'bold');
-          doc.text('Items:', 20, yPos);
-          yPos += 10;
-
-          doc.setFont('helvetica', 'normal');
           document.items.forEach((item, index) => {
-            const itemText = `${index + 1}. ${item.name} - Qty: ${item.quantity.toFixed(2)} - Price: ${item.unitPrice.toFixed(2)} - Total: ${item.total.toFixed(2)}`;
-            doc.text(itemText, 20, yPos);
-            yPos += 8;
+            if (yPos > 250) { // Check if we need a new page
+              doc.addPage();
+              yPos = 20;
+            }
+
+            doc.text(`${index + 1}. ${item.name}`, 20, yPos, { maxWidth: 90 });
+            doc.text(item.quantity?.toFixed(2) || '0', 120, yPos);
+            doc.text(item.unitPrice?.toFixed(2) || '0', 140, yPos);
+            doc.text(item.total?.toFixed(2) || '0', 170, yPos);
+            yPos += 6;
           });
         }
 
-        // Add company info
-        doc.setFontSize(10);
-        doc.text(`Company: ${companySettings.companyName}`, 20, 250);
-        doc.text(`Tax ID: ${companySettings.taxId}`, 20, 260);
+        // Total section
+        yPos += 10;
+        doc.line(20, yPos - 2, 190, yPos - 2);
+        doc.setFont('helvetica', 'bold');
+        doc.text('รวมทั้งสิ้น / Total:', 120, yPos);
+        doc.text(`${document.totalAmount?.toFixed(2) || '0.00'} บาท`, 170, yPos);
 
-        // Generate PDF with better compatibility
+        // Generate PDF
         const pdfOutput = doc.output('arraybuffer');
         return Buffer.from(pdfOutput);
 

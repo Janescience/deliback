@@ -59,9 +59,6 @@ function generatePrintHTML(documents, companySettings) {
           .document-container {
             page-break-after: always !important;
             break-after: page !important;
-            min-height: 85vh !important;
-            max-height: 85vh !important;
-            overflow: hidden !important;
             position: relative !important;
           }
 
@@ -73,6 +70,15 @@ function generatePrintHTML(documents, companySettings) {
           .document-container:last-child {
             page-break-after: avoid !important;
             break-after: avoid !important;
+          }
+
+          /* Desktop print optimizations */
+          @media print and (min-width: 769px) {
+            .document-container {
+              min-height: 85vh !important;
+              max-height: 85vh !important;
+              overflow: hidden !important;
+            }
           }
 
           @page {
@@ -104,10 +110,10 @@ function generatePrintHTML(documents, companySettings) {
             .document-container {
               page-break-after: always !important;
               break-after: page !important;
-              height: 90vh !important;
-              max-height: 90vh !important;
-              overflow: hidden !important;
               box-sizing: border-box !important;
+              min-height: auto !important;
+              height: auto !important;
+              overflow: visible !important;
             }
 
             .document-container:first-child {
@@ -131,9 +137,9 @@ function generatePrintHTML(documents, companySettings) {
             .document-container {
               page-break-after: always !important;
               break-after: page !important;
-              height: calc(85vh - 30mm) !important;
-              max-height: calc(85vh - 30mm) !important;
-              overflow: hidden !important;
+              height: auto !important;
+              max-height: none !important;
+              overflow: visible !important;
               box-sizing: border-box !important;
               position: relative !important;
             }
