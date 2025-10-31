@@ -166,7 +166,7 @@ export const DocumentTemplate = ({ data, className = '' }) => {
                 className="max-w-full max-h-full object-contain"
               />
             ) : (
-              <span className="text-xs text-gray-500">LOGO</span>
+              <div className="text-sm text-gray-500 font-bold text-center leading-tight border border-gray-300 p-2">{companySettings.companyName || 'Ordix'}</div>
             )}
           </div>
           <div className="text-left flex flex-col justify-center">
@@ -408,7 +408,7 @@ export const generateDocumentHTML = (document, companySettings, isPageBreak = fa
         <div style="width: ${companySettings.logo?.width || 80}px; height: ${companySettings.logo?.height || 80}px; display: flex; align-items: center; justify-content: center; margin-right: 16px;">
           ${companySettings.logo?.url
             ? `<img src="${companySettings.logo.url}" style="max-width: 100%; max-height: 100%; object-fit: contain;" alt="Logo" />`
-            : '<span style="font-size: 12px; color: #6b7280;">LOGO</span>'
+            : '<div style="font-size: 14px; color: #6b7280; font-weight: bold; text-align: center; line-height: 1.2; border: 1px solid #e5e7eb; padding: 8px;">' + companySettings.companyName + '</div>'
           }
         </div>
         <div style="text-align: left; display: flex; flex-direction: column; justify-content: center; height: 80px;">

@@ -228,8 +228,8 @@ export async function POST(request) {
         amount: customer.totalAmount || 0,
         order_count: customer.orders?.length || 0,
         date_range: {
-          from: customer.earliestDate || startDate,
-          to: customer.latestDate || endDate
+          from: customer.earliestDate || periodStart,
+          to: customer.latestDate || periodEnd
         },
         invoice_number: documents[index]?.docNumber || `B${dateStr}${String(index + 1).padStart(3, '0')}`
       })),

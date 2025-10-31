@@ -222,7 +222,8 @@ export default function DocumentsPage() {
       setLoading(true);
 
       const response = await axios.post('/api/documents/download', {
-        documents: billingPreviewData.documents
+        documents: billingPreviewData.documents,
+        userId: 'default'
       }, {
         responseType: 'blob'
       });
@@ -232,7 +233,14 @@ export default function DocumentsPage() {
       link.href = url;
 
       const dateStr = new Date(billingPreviewData.actualBillingDate).toLocaleDateString('th-TH').replace(/\//g, '');
-      link.setAttribute('download', `ใบวางบิล_${dateStr}.zip`);
+
+      // Determine file extension based on number of documents
+      const fileExtension = billingPreviewData.documents.length === 1 ? 'pdf' : 'zip';
+      const fileName = billingPreviewData.documents.length === 1
+        ? `${billingPreviewData.documents[0].customer.name}_${billingPreviewData.documents[0].docNumber}.${fileExtension}`
+        : `ใบวางบิล_${dateStr}.${fileExtension}`;
+
+      link.setAttribute('download', fileName);
 
       document.body.appendChild(link);
       link.click();
@@ -350,30 +358,38 @@ export default function DocumentsPage() {
 
     try {
       setLoading(true);
-      
-      // Call API to generate and download documents as ZIP
+
+      // Call API to generate and download documents
       const response = await axios.post('/api/documents/download', {
-        documents: previewData.documents
+        documents: previewData.documents,
+        userId: 'default'
       }, {
         responseType: 'blob'
       });
-      
+
       // Create download link
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      
+
       const dateStr = new Date(selectedDate).toLocaleDateString('th-TH').replace(/\//g, '');
-      link.setAttribute('download', `เอกสาร_${dateStr}.zip`);
-      
+
+      // Determine file extension based on number of documents
+      const fileExtension = previewData.documents.length === 1 ? 'pdf' : 'zip';
+      const fileName = previewData.documents.length === 1
+        ? `${previewData.documents[0].customer.name}_${previewData.documents[0].docNumber}.${fileExtension}`
+        : `เอกสาร_${dateStr}.${fileExtension}`;
+
+      link.setAttribute('download', fileName);
+
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      
+
       setShowPreview(false);
       setPreviewData(null);
-      
+
     } catch (error) {
       console.error('Failed to download documents:', error);
       alert('เกิดข้อผิดพลาดในการดาวโหลด');
@@ -385,23 +401,25 @@ export default function DocumentsPage() {
   const handleDownloadSingle = async (docData) => {
     try {
       setLoading(true);
-      
+
       const response = await axios.post('/api/documents/download', {
-        documents: [docData]
+        documents: [docData],
+        userId: 'default'
       }, {
         responseType: 'blob'
       });
-      
+
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
+      // Single document will be PDF from backend
       link.setAttribute('download', `${docData.customer.name}_${docData.docNumber}.pdf`);
-      
+
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      
+
     } catch (error) {
       console.error('Failed to download single document:', error);
       alert('เกิดข้อผิดพลาดในการดาวโหลด');
@@ -484,7 +502,7 @@ export default function DocumentsPage() {
   const generateAndDownloadAll = async () => {
     try {
       setLoading(true);
-      
+
       // Generate documents first
       const response = await axios.post('/api/documents/generate', {
         date: selectedDate,
@@ -494,7 +512,8 @@ export default function DocumentsPage() {
       if (response.data.success) {
         // Download documents
         const downloadResponse = await axios.post('/api/documents/download', {
-          documents: response.data.documents
+          documents: response.data.documents,
+          userId: 'default'
         }, {
           responseType: 'blob'
         });
@@ -502,7 +521,14 @@ export default function DocumentsPage() {
         const url = window.URL.createObjectURL(new Blob([downloadResponse.data]));
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', `documents_${Date.now()}.zip`);
+
+        // Determine file extension based on number of documents
+        const fileExtension = response.data.documents.length === 1 ? 'pdf' : 'zip';
+        const fileName = response.data.documents.length === 1
+          ? `${response.data.documents[0].customer.name}_${response.data.documents[0].docNumber}.${fileExtension}`
+          : `documents_${Date.now()}.${fileExtension}`;
+
+        link.setAttribute('download', fileName);
         document.body.appendChild(link);
         link.click();
         link.remove();
