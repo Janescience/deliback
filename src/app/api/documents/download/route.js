@@ -231,20 +231,45 @@ function generatePrintHTML(documents, companySettings) {
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap');
 
         @media print {
-          body { margin: 0; padding: 0; }
-          .page-break { page-break-before: always; }
+          body {
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+
+          .page-break {
+            page-break-before: always !important;
+            break-before: page !important;
+            display: block !important;
+            height: 0 !important;
+            overflow: hidden !important;
+          }
+
           @page {
             margin-top: 10mm;
-            margin-bottom: 5mm;
-            margin-left: 0;
-            margin-right: 0;
+            margin-bottom: 10mm;
+            margin-left: 10mm;
+            margin-right: 10mm;
             size: A4;
           }
 
           /* Force remove headers and footers */
           @page :first { margin-top: 10mm; }
-          @page :left { margin-left: 0; }
-          @page :right { margin-right: 0; }
+          @page :left { margin-left: 10mm; }
+          @page :right { margin-right: 10mm; }
+
+          /* Ensure each document starts on new page */
+          .document-container {
+            page-break-after: always !important;
+            break-after: page !important;
+            min-height: 90vh !important;
+          }
+
+          .document-container:last-child {
+            page-break-after: auto !important;
+            break-after: auto !important;
+          }
 
           /* Hide page numbers and headers completely */
           * {
@@ -270,6 +295,30 @@ function generatePrintHTML(documents, companySettings) {
           body {
             padding: 5mm 8mm;
             margin: 0;
+          }
+
+          .document-container {
+            page-break-after: always !important;
+            break-after: page !important;
+            min-height: 90vh !important;
+          }
+
+          .document-container:last-child {
+            page-break-after: auto !important;
+            break-after: auto !important;
+          }
+        }
+
+        /* Mobile-specific styles */
+        @media screen and (max-width: 768px) {
+          .document-container {
+            margin-bottom: 40px;
+            padding-bottom: 40px;
+            border-bottom: 2px solid #ddd;
+          }
+
+          .document-container:last-child {
+            border-bottom: none;
           }
         }
 

@@ -346,7 +346,56 @@ export default function DocumentsPage() {
     try {
       setLoading(true);
 
-      // Call API to generate and download documents
+      // Check if mobile device
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      if (isMobile && previewData.documents.length === 1) {
+        // For mobile single document: Offer HTML option
+        const useHTML = confirm('PDF files might not work well on mobile devices.\n\nWould you like to download as HTML instead?\n\nOK = HTML (recommended for mobile)\nCancel = PDF');
+
+        if (useHTML) {
+          // Download as HTML
+          const response = await axios.post('/api/documents/print', {
+            documents: previewData.documents,
+            userId: 'default'
+          });
+
+          const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>${previewData.documents[0].customer.name}_${previewData.documents[0].docNumber}</title>
+              <style>
+                body { font-family: 'Sarabun', sans-serif; padding: 20px; }
+                @media print { body { padding: 0; margin: 0; } }
+              </style>
+            </head>
+            <body>
+              ${response.data.html}
+            </body>
+            </html>
+          `;
+
+          const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', `${previewData.documents[0].customer.name}_${previewData.documents[0].docNumber}.html`);
+
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          window.URL.revokeObjectURL(url);
+
+          setShowPreview(false);
+          setPreviewData(null);
+          return;
+        }
+      }
+
+      // Regular download (PDF for single, ZIP for multiple)
       const response = await axios.post('/api/documents/download', {
         documents: previewData.documents,
         userId: 'default'
@@ -389,6 +438,53 @@ export default function DocumentsPage() {
     try {
       setLoading(true);
 
+      // Check if mobile device
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      if (isMobile) {
+        // For mobile: Offer options
+        const useHTML = confirm('PDF files might not work well on mobile devices.\n\nWould you like to download as HTML instead?\n\nOK = HTML (recommended for mobile)\nCancel = PDF');
+
+        if (useHTML) {
+          // Download as HTML
+          const response = await axios.post('/api/documents/print', {
+            documents: [docData],
+            userId: 'default'
+          });
+
+          const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>${docData.customer.name}_${docData.docNumber}</title>
+              <style>
+                body { font-family: 'Sarabun', sans-serif; padding: 20px; }
+                @media print { body { padding: 0; margin: 0; } }
+              </style>
+            </head>
+            <body>
+              ${response.data.html}
+            </body>
+            </html>
+          `;
+
+          const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', `${docData.customer.name}_${docData.docNumber}.html`);
+
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          window.URL.revokeObjectURL(url);
+          return;
+        }
+      }
+
+      // Regular PDF download (for desktop or mobile user chose PDF)
       const response = await axios.post('/api/documents/download', {
         documents: [docData],
         userId: 'default'
@@ -396,10 +492,21 @@ export default function DocumentsPage() {
         responseType: 'blob'
       });
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      // Validate PDF content
+      const arrayBuffer = await response.data.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+
+      // Check if it's a valid PDF (starts with %PDF)
+      const pdfHeader = String.fromCharCode(...uint8Array.slice(0, 4));
+      if (pdfHeader !== '%PDF') {
+        console.error('Invalid PDF file received');
+        alert('Downloaded file is not a valid PDF. Please try again or contact support.');
+        return;
+      }
+
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
       const link = document.createElement('a');
       link.href = url;
-      // Single document will be PDF from backend
       link.setAttribute('download', `${docData.customer.name}_${docData.docNumber}.pdf`);
 
       document.body.appendChild(link);

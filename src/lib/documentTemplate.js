@@ -400,7 +400,7 @@ export const generateDocumentHTML = (document, companySettings, isPageBreak = fa
 
   return `
     ${isPageBreak ? '<div class="page-break"></div>' : ''}
-
+    <div class="document-container">
     <!-- Header -->
     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; padding-bottom: 10px;">
       <!-- Logo + Company Info - Left -->
@@ -607,5 +607,6 @@ export const generateDocumentHTML = (document, companySettings, isPageBreak = fa
         </tr>
       </tbody>
     </table>
+    </div>
   `;
 };
