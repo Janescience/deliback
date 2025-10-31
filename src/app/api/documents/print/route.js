@@ -55,6 +55,28 @@ function generatePrintHTML(documents, companySettings) {
         @media print {
           body { margin: 0; padding: 0; }
           .page-break { page-break-before: always; }
+
+          .document-container {
+            page-break-after: always !important;
+            page-break-before: always !important;
+            break-after: page !important;
+            break-before: page !important;
+            min-height: 90vh !important;
+            max-height: 90vh !important;
+            overflow: hidden !important;
+            position: relative !important;
+          }
+
+          .document-container:first-child {
+            page-break-before: avoid !important;
+            break-before: avoid !important;
+          }
+
+          .document-container:last-child {
+            page-break-after: auto !important;
+            break-after: auto !important;
+          }
+
           @page {
             margin-top: 10mm;
             margin-bottom: 5mm;
@@ -67,11 +89,60 @@ function generatePrintHTML(documents, companySettings) {
           @page :first { margin-top: 10mm; }
           @page :left { margin-left: 0; }
           @page :right { margin-right: 0; }
-          
+
           /* Hide page numbers and headers completely */
           * {
             -webkit-print-color-adjust: exact !important;
             color-adjust: exact !important;
+          }
+
+          /* Mobile print specific fixes */
+          @media print and (max-width: 768px) {
+            @page {
+              margin: 15mm 5mm 10mm 5mm !important;
+              size: A4 portrait !important;
+            }
+
+            .document-container {
+              page-break-after: always !important;
+              page-break-before: always !important;
+              break-after: page !important;
+              break-before: page !important;
+              height: 100vh !important;
+              max-height: 100vh !important;
+              overflow: hidden !important;
+              box-sizing: border-box !important;
+            }
+
+            .document-container:first-child {
+              page-break-before: avoid !important;
+              break-before: avoid !important;
+            }
+          }
+
+          /* iOS Safari print fixes */
+          @supports (-webkit-touch-callout: none) {
+            @page {
+              margin: 20mm 10mm 15mm 10mm !important;
+              size: A4 portrait !important;
+            }
+
+            .document-container {
+              page-break-after: always !important;
+              page-break-before: always !important;
+              break-after: page !important;
+              break-before: page !important;
+              height: calc(100vh - 40mm) !important;
+              max-height: calc(100vh - 40mm) !important;
+              overflow: hidden !important;
+              box-sizing: border-box !important;
+              position: relative !important;
+            }
+
+            .document-container:first-child {
+              page-break-before: avoid !important;
+              break-before: avoid !important;
+            }
           }
         }
         
