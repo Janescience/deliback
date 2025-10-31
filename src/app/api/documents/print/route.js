@@ -58,11 +58,9 @@ function generatePrintHTML(documents, companySettings) {
 
           .document-container {
             page-break-after: always !important;
-            page-break-before: always !important;
             break-after: page !important;
-            break-before: page !important;
-            min-height: 90vh !important;
-            max-height: 90vh !important;
+            min-height: 85vh !important;
+            max-height: 85vh !important;
             overflow: hidden !important;
             position: relative !important;
           }
@@ -73,8 +71,8 @@ function generatePrintHTML(documents, companySettings) {
           }
 
           .document-container:last-child {
-            page-break-after: auto !important;
-            break-after: auto !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
           }
 
           @page {
@@ -105,11 +103,9 @@ function generatePrintHTML(documents, companySettings) {
 
             .document-container {
               page-break-after: always !important;
-              page-break-before: always !important;
               break-after: page !important;
-              break-before: page !important;
-              height: 100vh !important;
-              max-height: 100vh !important;
+              height: 90vh !important;
+              max-height: 90vh !important;
               overflow: hidden !important;
               box-sizing: border-box !important;
             }
@@ -117,6 +113,11 @@ function generatePrintHTML(documents, companySettings) {
             .document-container:first-child {
               page-break-before: avoid !important;
               break-before: avoid !important;
+            }
+
+            .document-container:last-child {
+              page-break-after: avoid !important;
+              break-after: avoid !important;
             }
           }
 
@@ -129,11 +130,9 @@ function generatePrintHTML(documents, companySettings) {
 
             .document-container {
               page-break-after: always !important;
-              page-break-before: always !important;
               break-after: page !important;
-              break-before: page !important;
-              height: calc(100vh - 40mm) !important;
-              max-height: calc(100vh - 40mm) !important;
+              height: calc(85vh - 30mm) !important;
+              max-height: calc(85vh - 30mm) !important;
               overflow: hidden !important;
               box-sizing: border-box !important;
               position: relative !important;
@@ -142,6 +141,11 @@ function generatePrintHTML(documents, companySettings) {
             .document-container:first-child {
               page-break-before: avoid !important;
               break-before: avoid !important;
+            }
+
+            .document-container:last-child {
+              page-break-after: avoid !important;
+              break-after: avoid !important;
             }
           }
         }

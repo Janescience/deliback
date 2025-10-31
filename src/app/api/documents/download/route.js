@@ -306,12 +306,16 @@ async function generatePDF(document, companySettings) {
       </html>
     `;
 
-    // Try Puppeteer first
-    try {
-      // Launch Puppeteer to convert HTML to PDF
-      let browser;
+    // Check if we should skip Puppeteer in production due to known issues
+    const shouldUsePuppeteer = process.env.NODE_ENV !== 'production' || process.env.FORCE_PUPPETEER === 'true';
 
-      if (process.env.NODE_ENV === 'production') {
+    if (shouldUsePuppeteer) {
+      // Try Puppeteer first
+      try {
+        // Launch Puppeteer to convert HTML to PDF
+        let browser;
+
+        if (process.env.NODE_ENV === 'production') {
         // Use puppeteer-core with Chromium for production
         const executablePath = await chromium.executablePath();
         console.log('Using Chromium executable:', executablePath);
@@ -374,13 +378,17 @@ async function generatePDF(document, companySettings) {
 
       return pdfBuffer;
 
-    } catch (puppeteerError) {
-      console.error('Puppeteer PDF generation failed:', puppeteerError.message);
-      console.error('Error stack:', puppeteerError.stack);
-      console.error('Falling back to jsPDF generation...');
+      } catch (puppeteerError) {
+        console.error('Puppeteer PDF generation failed:', puppeteerError.message);
+        console.error('Error stack:', puppeteerError.stack);
+        console.error('Falling back to jsPDF generation...');
+      }
+    } else {
+      console.log('Skipping Puppeteer in production, using jsPDF directly');
+    }
 
-      // Use jsPDF as fallback with better compatibility
-      try {
+    // Use jsPDF as fallback with better compatibility
+    try {
         const { jsPDF } = require('jspdf');
 
         const doc = new jsPDF({
@@ -515,9 +523,9 @@ startxref
 
         return Buffer.from(minimalPdf, 'utf8');
       }
-    }
 
   } catch (error) {
+    console.error('All PDF generation methods failed:', error.message);
     throw error;
   }
 }
