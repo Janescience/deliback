@@ -145,7 +145,9 @@ async function generatePDF(document, companySettings) {
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap');
 
-          * { box-sizing: border-box; }
+          * {
+            box-sizing: border-box;
+          }
 
           body {
             font-family: '${processedSettings.templateSettings?.fontFamily || 'Sarabun'}', sans-serif;
@@ -156,100 +158,145 @@ async function generatePDF(document, companySettings) {
             color: ${processedSettings.templateSettings?.primaryColor || '#000'};
           }
 
-          .document-container {
-            margin-top: 20mm;
-            page-break-after: always;
-          }
-
-          .document-container:first-child {
-            margin-top: 0;
-          }
-
           @media print {
             body {
-              padding: 0;
+              padding: 5mm 8mm;
               margin: 0;
               -webkit-print-color-adjust: exact !important;
               color-adjust: exact !important;
             }
 
-            @page {
-              margin-top: 20mm;
-              margin-bottom: 15mm;
-              margin-left: 15mm;
-              margin-right: 15mm;
-              size: A4;
-            }
-
             .document-container {
-              margin-top: 0;
-              padding-top: 10mm;
-              min-height: calc(100vh - 40mm);
-              page-break-after: always;
-              break-after: page;
-            }
-
-            .document-container:first-child {
-              padding-top: 0;
+              page-break-after: always !important;
+              break-after: page !important;
+              min-height: 90vh !important;
             }
 
             .document-container:last-child {
-              page-break-after: auto;
-              break-after: auto;
-            }
-
-            /* Safari print specific fixes */
-            @media print and (-webkit-min-device-pixel-ratio: 0) {
-              table {
-                border-collapse: separate !important;
-                border-spacing: 0 !important;
-                border: 2px solid #000 !important;
-              }
-
-              table td, table th {
-                border: 1px solid #000 !important;
-                border-right: 1px solid #000 !important;
-                border-bottom: 1px solid #000 !important;
-              }
-
-              table td:last-child, table th:last-child {
-                border-right: 1px solid #000 !important;
-              }
-
-              table tr:last-child td {
-                border-bottom: 1px solid #000 !important;
-              }
-            }
-
-            /* Mobile Safari specific */
-            @supports (-webkit-touch-callout: none) {
-              @page {
-                margin-top: 25mm !important;
-                margin-bottom: 20mm !important;
-                margin-left: 20mm !important;
-                margin-right: 20mm !important;
-              }
-
-              .document-container {
-                padding-top: 15mm !important;
-              }
-
-              .document-container:first-child {
-                padding-top: 5mm !important;
-              }
-
-              table {
-                border-collapse: separate !important;
-                border-spacing: 0 !important;
-                border: 2px solid #000 !important;
-              }
-
-              table td, table th {
-                border: 1px solid #000 !important;
-                -webkit-print-color-adjust: exact !important;
-              }
+              page-break-after: auto !important;
+              break-after: auto !important;
             }
           }
+
+          /* Mobile-specific styles */
+          @media screen and (max-width: 768px) {
+            .document-container {
+              margin-bottom: 40px;
+              padding-bottom: 40px;
+              border-bottom: 2px solid #ddd;
+            }
+
+            .document-container:last-child {
+              border-bottom: none;
+            }
+          }
+
+          .header {
+            text-align: right;
+            margin-bottom: 15px;
+          }
+
+          .doc-title {
+            background-color: #555;
+            color: white;
+            padding: 8px 15px;
+            font-weight: bold;
+            font-size: 14px;
+          }
+
+          .company-header {
+            text-align: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #000;
+          }
+
+          .company-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2563eb;
+            margin-bottom: 2px;
+          }
+
+          .company-details {
+            font-size: 11px;
+            line-height: 1.2;
+          }
+
+          .info-table {
+            width: 100%;
+            border: 2px solid #000;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 12px;
+          }
+
+          .info-table td {
+            padding: 4px 8px;
+            border: 1px solid #000;
+            vertical-align: top;
+          }
+
+          .info-header {
+            background-color: #f0f0f0;
+            font-weight: bold;
+            font-size: 11px;
+          }
+
+          .product-table {
+            width: 100%;
+            border: 2px solid #000;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 12px;
+          }
+
+          .product-table th {
+            background-color: #555;
+            color: white;
+            padding: 8px 4px;
+            text-align: center;
+            font-size: 11px;
+            font-weight: bold;
+          }
+
+          .product-table td {
+            padding: 6px 4px;
+            border: 1px solid #000;
+            vertical-align: top;
+          }
+
+          .text-center { text-align: center; }
+          .text-right { text-align: right; }
+
+          .totals-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+          }
+
+          .totals-left {
+            flex: 1;
+            padding-right: 20px;
+          }
+
+          .totals-right {
+            width: 250px;
+          }
+
+          .totals-table {
+            width: 100%;
+            border: 1px solid #000;
+            border-collapse: collapse;
+          }
+
+          .totals-table td {
+            padding: 4px 8px;
+            border: 1px solid #000;
+            font-size: 12px;
+          }
+
+
         </style>
       </head>
       <body>
@@ -302,12 +349,12 @@ async function generatePDF(document, companySettings) {
       const page = await browser.newPage();
       await page.setContent(html, { waitUntil: 'domcontentloaded' });
 
-      // Generate PDF with better compatibility settings
+      // Generate PDF to match print format exactly
       const pdfBuffer = await page.pdf({
         format: 'A4',
         printBackground: true,
-        margin: { top: '20mm', bottom: '20mm', left: '15mm', right: '15mm' },
-        preferCSSPageSize: false,
+        margin: { top: '10mm', bottom: '10mm', left: '10mm', right: '10mm' },
+        preferCSSPageSize: true,
         displayHeaderFooter: false,
         tagged: false,
         outline: false
@@ -320,51 +367,73 @@ async function generatePDF(document, companySettings) {
     } catch (puppeteerError) {
       console.error('Puppeteer PDF generation failed:', puppeteerError.message);
 
-      // Use jsPDF as fallback
+      // Use jsPDF as fallback with better compatibility
       try {
         const { jsPDF } = require('jspdf');
 
-        const doc = new jsPDF();
+        const doc = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4',
+          compress: true
+        });
+
+        // Set font for better compatibility
+        doc.setFont('helvetica');
 
         // Add title
         doc.setFontSize(16);
-        doc.text(`${document.docType === 'receipt' ? 'ใบเสร็จ' : document.docType === 'billing' ? 'ใบวางบิล' : 'ใบส่งสินค้า'}`, 105, 20, { align: 'center' });
+        doc.setFont('helvetica', 'bold');
+        const title = document.docType === 'receipt' ? 'Receipt' :
+                     document.docType === 'billing' ? 'Invoice' : 'Delivery Note';
+        doc.text(title, 105, 20, { align: 'center' });
 
         // Add document info
         doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
         doc.text(`Document Number: ${document.docNumber}`, 20, 40);
         doc.text(`Customer: ${document.customer.name}`, 20, 50);
-        doc.text(`Date: ${new Date(document.date).toLocaleDateString('th-TH')}`, 20, 60);
+        doc.text(`Date: ${new Date(document.date).toLocaleDateString()}`, 20, 60);
         doc.text(`Total Amount: ${document.totalAmount.toFixed(2)} THB`, 20, 70);
 
         // Add items as simple text if available
         if (document.items && document.items.length > 0) {
           let yPos = 80;
+          doc.setFont('helvetica', 'bold');
           doc.text('Items:', 20, yPos);
           yPos += 10;
 
+          doc.setFont('helvetica', 'normal');
           document.items.forEach((item, index) => {
-            doc.text(`${index + 1}. ${item.name} - Qty: ${item.quantity.toFixed(2)} - Price: ${item.unitPrice.toFixed(2)} - Total: ${item.total.toFixed(2)}`, 20, yPos);
-            yPos += 10;
+            const itemText = `${index + 1}. ${item.name} - Qty: ${item.quantity.toFixed(2)} - Price: ${item.unitPrice.toFixed(2)} - Total: ${item.total.toFixed(2)}`;
+            doc.text(itemText, 20, yPos);
+            yPos += 8;
           });
         }
 
-        // Add note about fallback
-        const finalY = 130;
-        doc.setFontSize(8);
-        doc.text('Note: This PDF was generated using fallback method due to server limitations.', 20, finalY);
+        // Add company info
+        doc.setFontSize(10);
+        doc.text(`Company: ${companySettings.companyName}`, 20, 250);
+        doc.text(`Tax ID: ${companySettings.taxId}`, 20, 260);
 
-        return Buffer.from(doc.output('arraybuffer'));
+        // Generate PDF with better compatibility
+        const pdfOutput = doc.output('arraybuffer');
+        return Buffer.from(pdfOutput);
 
       } catch (jsPdfError) {
         console.error('jsPDF fallback also failed:', jsPdfError.message);
 
-        // Final fallback - create a minimal valid PDF
+        // Final fallback - create a compatible minimal PDF
+        const docNum = String(document.docNumber || 'N/A').substring(0, 20);
+        const custName = String(document.customer?.name || 'N/A').substring(0, 30);
+        const amount = String(document.totalAmount || '0').substring(0, 15);
+
         const minimalPdf = `%PDF-1.4
 1 0 obj
 <<
 /Type /Catalog
 /Pages 2 0 R
+/Producer (Halem Farm Backend)
 >>
 endobj
 
@@ -380,26 +449,38 @@ endobj
 <<
 /Type /Page
 /Parent 2 0 R
-/MediaBox [0 0 612 792]
+/MediaBox [0 0 595 842]
+/Resources <<
+  /Font <<
+    /F1 <<
+      /Type /Font
+      /Subtype /Type1
+      /BaseFont /Helvetica
+    >>
+  >>
+>>
 /Contents 4 0 R
 >>
 endobj
 
 4 0 obj
 <<
-/Length 100
+/Length 350
 >>
 stream
 BT
+/F1 16 Tf
+50 750 Td
+(Document) Tj
+0 -30 Td
 /F1 12 Tf
-72 720 Td
-(PDF Generation Failed) Tj
+(Document Number: ${docNum}) Tj
 0 -20 Td
-(Document: ${document.docNumber}) Tj
+(Customer: ${custName}) Tj
 0 -20 Td
-(Customer: ${document.customer.name}) Tj
-0 -20 Td
-(Amount: ${document.totalAmount}) Tj
+(Amount: ${amount} THB) Tj
+0 -40 Td
+(Note: PDF generated with fallback method) Tj
 ET
 endstream
 endobj
@@ -408,16 +489,16 @@ xref
 0 5
 0000000000 65535 f
 0000000009 00000 n
-0000000074 00000 n
+0000000078 00000 n
 0000000120 00000 n
-0000000179 00000 n
+0000000350 00000 n
 trailer
 <<
 /Size 5
 /Root 1 0 R
 >>
 startxref
-380
+450
 %%EOF`;
 
         return Buffer.from(minimalPdf, 'utf8');
