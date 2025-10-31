@@ -376,13 +376,13 @@ export default function OrderForm({ order, onSubmit, onCancel }) {
                         </label>
                         <Input
                           type="number"
-                          value={item.quantity}
-                          onChange={(e) => updateSelectedVegetable(item.vegetable_id, 'quantity', parseFloat(e.target.value) || 0)}
+                          value={item.quantity === 0 ? '' : item.quantity}
+                          onChange={(e) => updateSelectedVegetable(item.vegetable_id, 'quantity', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
                           min="0"
                           step="0.01"
                           inputMode="decimal"
                           className="text-xs"
-                          placeholder="0"
+                          placeholder="จำนวน"
                         />
                       </div>
                       
@@ -392,12 +392,13 @@ export default function OrderForm({ order, onSubmit, onCancel }) {
                         </label>
                         <Input
                           type="number"
-                          value={item.price}
-                          onChange={(e) => updateSelectedVegetable(item.vegetable_id, 'price', parseFloat(e.target.value) || 0)}
+                          value={item.price === 0 ? '' : item.price}
+                          onChange={(e) => updateSelectedVegetable(item.vegetable_id, 'price', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
                           min="0"
                           step="0.01"
                           inputMode="decimal"
                           className="text-xs"
+                          placeholder="ราคา"
                         />
                       </div>
                       
@@ -443,13 +444,13 @@ export default function OrderForm({ order, onSubmit, onCancel }) {
                         </label>
                         <Input
                           type="number"
-                          value={item.quantity}
-                          onChange={(e) => updateSelectedVegetable(item.vegetable_id, 'quantity', parseFloat(e.target.value) || 0)}
+                          value={item.quantity === 0 ? '' : item.quantity}
+                          onChange={(e) => updateSelectedVegetable(item.vegetable_id, 'quantity', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
                           min="0"
                           step="0.01"
                           inputMode="decimal"
                           className="text-xs"
-                          placeholder="0"
+                          placeholder="จำนวน"
                         />
                       </div>
                       
@@ -459,12 +460,13 @@ export default function OrderForm({ order, onSubmit, onCancel }) {
                         </label>
                         <Input
                           type="number"
-                          value={item.price}
-                          onChange={(e) => updateSelectedVegetable(item.vegetable_id, 'price', parseFloat(e.target.value) || 0)}
+                          value={item.price === 0 ? '' : item.price}
+                          onChange={(e) => updateSelectedVegetable(item.vegetable_id, 'price', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
                           min="0"
                           step="0.01"
                           inputMode="decimal"
                           className="text-xs"
+                          placeholder="ราคา"
                         />
                       </div>
                       
