@@ -211,7 +211,7 @@ export const DocumentTemplate = ({ data, className = '' }) => {
             <td className=" p-2 font-bold text-xs">
               ชื่อลูกค้า
             </td>
-            
+
             <td className=" p-2 " colSpan="1">{document.customer.companyName || document.customer.name}</td>
             <td className=" p-2 font-bold text-xs">
             </td>
@@ -224,8 +224,14 @@ export const DocumentTemplate = ({ data, className = '' }) => {
             <td className=" p-2 font-bold text-xs">
               ที่อยู่
             </td>
-        
-            <td className=" p-2" colSpan="2">{document.customer.address || ''}</td>
+
+            <td className=" p-2" colSpan="1">{document.customer.address || ''}</td>
+            <td className=" p-2 font-bold text-xs">
+            </td>
+            <td className=" p-2 font-bold text-xs">
+              {document.docType === 'billing' ? 'รอบบิล' : ''}
+            </td>
+            <td className=" p-2">{document.docType === 'billing' ? document.periodDisplay : ''}</td>
           </tr>
           <tr>
             <td className=" p-2 font-bold text-xs">
@@ -454,7 +460,7 @@ export const generateDocumentHTML = (document, companySettings, isPageBreak = fa
           </td>
           <td style="padding: 8px;" colspan="1">${document.customer.companyName || document.customer.name}</td>
           <td className=" p-2 font-bold text-xs">
-              
+
             </td>
           <td style="padding: 8px; font-weight: bold; font-size: 12px;">
             วันที่ทำรายการ<br/>กำหนดชำระเงิน
@@ -465,7 +471,14 @@ export const generateDocumentHTML = (document, companySettings, isPageBreak = fa
           <td style="padding: 8px; font-weight: bold; font-size: 12px;">
             ที่อยู่
           </td>
-          <td style="padding: 8px;" colspan="2">${document.customer.address || ''}</td>
+          <td style="padding: 8px;" colspan="1">${document.customer.address || ''}</td>
+          <td className=" p-2 font-bold text-xs">
+
+            </td>
+          <td style="padding: 8px; font-weight: bold; font-size: 12px;">
+            ${document.docType === 'billing' ? 'รอบบิล' : ''}
+          </td>
+          <td style="padding: 8px;">${document.docType === 'billing' ? document.periodDisplay : ''}</td>
         </tr>
         <tr>
           <td style="padding: 8px; font-weight: bold; font-size: 12px;">

@@ -133,8 +133,6 @@ export async function POST(request) {
     
     const body = await request.json();
     const { selectedCustomers, billingDate } = body;
-
-    console.log('Received selectedCustomers:', JSON.stringify(selectedCustomers.slice(0, 1), null, 2)); // Log first customer for debugging
     
     
     const documents = [];
@@ -236,7 +234,6 @@ export async function POST(request) {
       delivery_method: 'print'
     };
 
-    console.log('Saving billing history:', JSON.stringify(billingHistoryData, null, 2));
 
     try {
       const savedHistory = await BillingHistory.create(billingHistoryData);

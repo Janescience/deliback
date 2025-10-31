@@ -2,72 +2,28 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FileText, Download, Eye, Calendar, Users, Archive, X, Printer, CreditCard, AlertCircle, History } from 'lucide-react';
+import { FileText, Download, Calendar, Users, X, Printer, AlertCircle, History } from 'lucide-react';
 import { getThailandTodayString } from '@/lib/thailand-time-client';
-import { generateDocumentData, DocumentTemplate } from '@/lib/documentTemplate';
 
-// Company settings state (will be loaded from API)
-const DEFAULT_COMPANY_SETTINGS = {
-  companyName: 'Ordix',
-  address: {
-    line1: '198 ม.9 บ้านห้วยลาดอาย ต.ขุนดินเถื่อ',
-    line2: 'อ.ดูลำปี จ.ขกรรเขียว การค์โปรดแรด 30170'
-  },
-  telephone: '(+66) 095736589',
-  taxId: '34090003658912',
-  logo: {
-    url: '',
-    width: 64,
-    height: 64
-  },
-  documentSettings: {
-    creditDays: 15,
-    paymentTermsText: 'ตัดรอบวางบิลทุกวันที่ 15 ของเดือน',
-    paymentConditionText: 'รบกวนชําระเงินภายใน 7 วันหลังจากวางบิล'
-  },
-  bankSettings: {
-    bankName: 'ธนาคารกสิกรไทย',
-    accountNumber: '113-8-48085-9',
-    accountName: 'นายฮาเล็ม เจะมาริกัน',
-    transferInstructions: 'กรณีโอนชําระเงินเรียบร้อยแล้ว กรุณาส่งหลักฐานยืนยันการชําระผ่านทาง LINE'
-  },
-  templateSettings: {
-    deliveryNoteTitle: {
-      thai: 'ใบส่งสินค้า',
-      english: 'Delivery Sheet'
-    }
-  }
-};
 
 
 export default function DocumentsPage() {
   const [activeTab, setActiveTab] = useState('delivery');
 
-  // Company settings state
-  const [companySettings, setCompanySettings] = useState(DEFAULT_COMPANY_SETTINGS);
-
   // Delivery Notes Tab States
   const [selectedDate, setSelectedDate] = useState(getThailandTodayString());
-  const [orders, setOrders] = useState([]);
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [groupedOrders, setGroupedOrders] = useState({});
-  const [previewData, setPreviewData] = useState(null);
-  const [showPreview, setShowPreview] = useState(false);
 
   // Billing Tab States
   const [billingData, setBillingData] = useState(null);
   const [selectedCustomers, setSelectedCustomers] = useState([]);
   const [selectedPeriod, setSelectedPeriod] = useState('');
-  const [billingPreviewData, setBillingPreviewData] = useState(null);
-  const [showBillingPreview, setShowBillingPreview] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [billingHistory, setBillingHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
-  useEffect(() => {
-    fetchCompanySettings();
-  }, []);
 
   useEffect(() => {
     if (activeTab === 'delivery') {
@@ -88,17 +44,6 @@ export default function DocumentsPage() {
     }
   }, [selectedPeriod, activeTab]);
 
-  const fetchCompanySettings = async () => {
-    try {
-      const response = await axios.get('/api/company-settings');
-      if (response.data.success) {
-        setCompanySettings(response.data.settings);
-      }
-    } catch (error) {
-      console.error('Failed to fetch company settings:', error);
-      // Keep using default settings on error
-    }
-  };
 
   const fetchOrdersForDate = async () => {
     try {
@@ -126,7 +71,6 @@ export default function DocumentsPage() {
         grouped[key].totalAmount += order.total || 0;
       });
 
-      setOrders(todayOrders);
       setGroupedOrders(grouped);
       setSelectedOrders([]);
     } catch (error) {
@@ -200,12 +144,25 @@ export default function DocumentsPage() {
 
       const response = await axios.post('/api/documents/billing', {
         selectedCustomers: selectedData,
-        selectedPeriod: selectedPeriod // ส่ง period ที่เลือกไปด้วย
+        selectedPeriod: selectedPeriod
       });
 
-      console.log('Billing documents generated:', response.data);
-      setBillingPreviewData(response.data);
-      setShowBillingPreview(true);
+      // Directly print without preview
+      const printResponse = await axios.post('/api/documents/print', {
+        documents: response.data.documents,
+        userId: 'default'
+      });
+
+      // Open new window with print-ready HTML
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(printResponse.data.html);
+      printWindow.document.close();
+
+      // Auto-trigger print dialog
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
 
     } catch (error) {
       console.error('Failed to generate billing documents:', error);
@@ -215,69 +172,7 @@ export default function DocumentsPage() {
     }
   };
 
-  const handleDownloadAllBilling = async () => {
-    if (!billingPreviewData) return;
 
-    try {
-      setLoading(true);
-
-      const response = await axios.post('/api/documents/download', {
-        documents: billingPreviewData.documents,
-        userId: 'default'
-      }, {
-        responseType: 'blob'
-      });
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-
-      const dateStr = new Date(billingPreviewData.actualBillingDate).toLocaleDateString('th-TH').replace(/\//g, '');
-
-      // Determine file extension based on number of documents
-      const fileExtension = billingPreviewData.documents.length === 1 ? 'pdf' : 'zip';
-      const fileName = billingPreviewData.documents.length === 1
-        ? `${billingPreviewData.documents[0].customer.name}_${billingPreviewData.documents[0].docNumber}.${fileExtension}`
-        : `ใบวางบิล_${dateStr}.${fileExtension}`;
-
-      link.setAttribute('download', fileName);
-
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-
-    } catch (error) {
-      console.error('Failed to download billing documents:', error);
-      alert('เกิดข้อผิดพลาดในการดาวน์โหลด');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePrintAllBilling = async () => {
-    if (!billingPreviewData) return;
-
-    try {
-      setLoading(true);
-
-      const response = await axios.post('/api/documents/print', {
-        documents: billingPreviewData.documents,
-        userId: 'default'
-      });
-
-      const htmlContent = response.data.html;
-
-      // Use helper function to handle printing
-      handlePrint(htmlContent);
-
-    } catch (error) {
-      console.error('Failed to print billing documents:', error);
-      alert('เกิดข้อผิดพลาดในการปริ้น');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSelectOrder = (key, checked) => {
     if (checked) {
@@ -295,14 +190,6 @@ export default function DocumentsPage() {
     }
   };
 
-  const getDocumentType = (payMethod) => {
-    switch (payMethod) {
-      case 'credit': return 'ใบส่งสินค้า';
-      case 'cash': return 'ใบเสร็จ';
-      case 'transfer': return 'ใบเสร็จ'; // เงินโอนใช้ใบเสร็จ
-      default: return 'เอกสาร';
-    }
-  };
 
   const getDocumentColor = (payMethod) => {
     switch (payMethod) {
@@ -313,214 +200,8 @@ export default function DocumentsPage() {
     }
   };
 
-  const handlePreviewDocuments = async () => {
-    if (selectedOrders.length === 0) {
-      alert('กรุณาเลือกรายการที่ต้องการดูตัวอย่าง');
-      return;
-    }
 
-    try {
-      setLoading(true);
-      
-      // Call API to generate document data (not files)
-      const response = await axios.post('/api/documents/generate', {
-        date: selectedDate,
-        selectedOrders: selectedOrders.map(key => groupedOrders[key]),
-        preview: true
-      });
-      
-      setPreviewData(response.data);
-      setShowPreview(true);
-      
-    } catch (error) {
-      console.error('Failed to preview documents:', error);
-      alert('เกิดข้อผิดพลาดในการแสดงตัวอย่าง');
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const handleDownloadDocuments = async () => {
-    if (!previewData) return;
-
-    try {
-      setLoading(true);
-
-      // Check if mobile device
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-      if (isMobile && previewData.documents.length === 1) {
-        // For mobile single document: Offer HTML option
-        const useHTML = confirm('PDF files might not work well on mobile devices.\n\nWould you like to download as HTML instead?\n\nOK = HTML (recommended for mobile)\nCancel = PDF');
-
-        if (useHTML) {
-          // Download as HTML
-          const response = await axios.post('/api/documents/print', {
-            documents: previewData.documents,
-            userId: 'default'
-          });
-
-          const htmlContent = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>${previewData.documents[0].customer.name}_${previewData.documents[0].docNumber}</title>
-              <style>
-                body { font-family: 'Sarabun', sans-serif; padding: 20px; }
-                @media print { body { padding: 0; margin: 0; } }
-              </style>
-            </head>
-            <body>
-              ${response.data.html}
-            </body>
-            </html>
-          `;
-
-          const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-          const url = window.URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.setAttribute('download', `${previewData.documents[0].customer.name}_${previewData.documents[0].docNumber}.html`);
-
-          document.body.appendChild(link);
-          link.click();
-          link.remove();
-          window.URL.revokeObjectURL(url);
-
-          setShowPreview(false);
-          setPreviewData(null);
-          return;
-        }
-      }
-
-      // Regular download (PDF for single, ZIP for multiple)
-      const response = await axios.post('/api/documents/download', {
-        documents: previewData.documents,
-        userId: 'default'
-      }, {
-        responseType: 'blob'
-      });
-
-      // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-
-      const dateStr = new Date(selectedDate).toLocaleDateString('th-TH').replace(/\//g, '');
-
-      // Determine file extension based on number of documents
-      const fileExtension = previewData.documents.length === 1 ? 'pdf' : 'zip';
-      const fileName = previewData.documents.length === 1
-        ? `${previewData.documents[0].customer.name}_${previewData.documents[0].docNumber}.${fileExtension}`
-        : `เอกสาร_${dateStr}.${fileExtension}`;
-
-      link.setAttribute('download', fileName);
-
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-
-      setShowPreview(false);
-      setPreviewData(null);
-
-    } catch (error) {
-      console.error('Failed to download documents:', error);
-      alert('เกิดข้อผิดพลาดในการดาวโหลด');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDownloadSingle = async (docData) => {
-    try {
-      setLoading(true);
-
-      // Check if mobile device
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-      if (isMobile) {
-        // For mobile: Offer options
-        const useHTML = confirm('PDF files might not work well on mobile devices.\n\nWould you like to download as HTML instead?\n\nOK = HTML (recommended for mobile)\nCancel = PDF');
-
-        if (useHTML) {
-          // Download as HTML
-          const response = await axios.post('/api/documents/print', {
-            documents: [docData],
-            userId: 'default'
-          });
-
-          const htmlContent = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>${docData.customer.name}_${docData.docNumber}</title>
-              <style>
-                body { font-family: 'Sarabun', sans-serif; padding: 20px; }
-                @media print { body { padding: 0; margin: 0; } }
-              </style>
-            </head>
-            <body>
-              ${response.data.html}
-            </body>
-            </html>
-          `;
-
-          const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-          const url = window.URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.setAttribute('download', `${docData.customer.name}_${docData.docNumber}.html`);
-
-          document.body.appendChild(link);
-          link.click();
-          link.remove();
-          window.URL.revokeObjectURL(url);
-          return;
-        }
-      }
-
-      // Regular PDF download (for desktop or mobile user chose PDF)
-      const response = await axios.post('/api/documents/download', {
-        documents: [docData],
-        userId: 'default'
-      }, {
-        responseType: 'blob'
-      });
-
-      // Validate PDF content
-      const arrayBuffer = await response.data.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
-
-      // Check if it's a valid PDF (starts with %PDF)
-      const pdfHeader = String.fromCharCode(...uint8Array.slice(0, 4));
-      if (pdfHeader !== '%PDF') {
-        console.error('Invalid PDF file received');
-        alert('Downloaded file is not a valid PDF. Please try again or contact support.');
-        return;
-      }
-
-      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `${docData.customer.name}_${docData.docNumber}.pdf`);
-
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-
-    } catch (error) {
-      console.error('Failed to download single document:', error);
-      alert('เกิดข้อผิดพลาดในการดาวโหลด');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handlePrintAllWithConfirm = async () => {
     const confirmed = window.confirm(`คุณต้องการปริ้นเอกสารทั้งหมด ${selectedOrders.length} รายการใช่หรือไม่?\n\nหมายเหตุ: ใบส่งสินค้าจะปริ้น 2 ใบ, ใบเสร็จจะปริ้น 1 ใบ`);
@@ -529,12 +210,6 @@ export default function DocumentsPage() {
     }
   };
 
-  const handleDownloadAllWithConfirm = async () => {
-    const confirmed = window.confirm(`คุณต้องการดาวโหลดเอกสารทั้งหมด ${selectedOrders.length} รายการใช่หรือไม่?`);
-    if (confirmed) {
-      await generateAndDownloadAll();
-    }
-  };
 
   const generateAndPrintAll = async () => {
     try {
@@ -578,115 +253,8 @@ export default function DocumentsPage() {
     }
   };
 
-  const generateAndDownloadAll = async () => {
-    try {
-      setLoading(true);
 
-      // Generate documents first
-      const response = await axios.post('/api/documents/generate', {
-        date: selectedDate,
-        selectedOrders: selectedOrders.map(orderKey => groupedOrders[orderKey])
-      });
 
-      if (response.data.success) {
-        // Download documents
-        const downloadResponse = await axios.post('/api/documents/download', {
-          documents: response.data.documents,
-          userId: 'default'
-        }, {
-          responseType: 'blob'
-        });
-
-        const url = window.URL.createObjectURL(new Blob([downloadResponse.data]));
-        const link = document.createElement('a');
-        link.href = url;
-
-        // Determine file extension based on number of documents
-        const fileExtension = response.data.documents.length === 1 ? 'pdf' : 'zip';
-        const fileName = response.data.documents.length === 1
-          ? `${response.data.documents[0].customer.name}_${response.data.documents[0].docNumber}.${fileExtension}`
-          : `documents_${Date.now()}.${fileExtension}`;
-
-        link.setAttribute('download', fileName);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.URL.revokeObjectURL(url);
-      }
-    } catch (error) {
-      console.error('Failed to generate and download documents:', error);
-      alert('เกิดข้อผิดพลาดในการสร้างและดาวโหลดเอกสาร');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePrintSingle = async (docData) => {
-    try {
-      setLoading(true);
-
-      // Prepare documents for printing based on type
-      let documentsToprint = [docData];
-
-      // If it's delivery note (ใบส่งสินค้า), print 2 copies
-      if (docData.docType === 'delivery_note') {
-        documentsToprint = [docData, docData]; // Duplicate for 2 copies
-      }
-
-      const response = await axios.post('/api/documents/print', {
-        documents: documentsToprint,
-        userId: 'default'
-      });
-
-      const htmlContent = response.data.html;
-
-      // Use helper function to handle printing
-      handlePrint(htmlContent);
-
-    } catch (error) {
-      console.error('Failed to print single document:', error);
-      alert('เกิดข้อผิดพลาดในการปริ้น');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePrintAll = async () => {
-    if (!previewData) return;
-
-    try {
-      setLoading(true);
-
-      // Prepare documents for printing with correct copies
-      const documentsToprint = [];
-
-      previewData.documents.forEach(doc => {
-        if (doc.docType === 'delivery_note') {
-          // Add 2 copies for delivery notes (ใบส่งสินค้า)
-          documentsToprint.push(doc, doc);
-        } else {
-          // Add 1 copy for receipts (ใบเสร็จ)
-          documentsToprint.push(doc);
-        }
-      });
-
-      const response = await axios.post('/api/documents/print', {
-        documents: documentsToprint,
-        userId: 'default'
-      });
-
-      const htmlContent = response.data.html;
-
-      // Use helper function to handle printing
-      handlePrint(htmlContent);
-
-    } catch (error) {
-      console.error('Failed to print documents:', error);
-      alert('เกิดข้อผิดพลาดในการปริ้น');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const formatMoney = (amount) => {
     return Math.round(amount).toLocaleString();
@@ -900,15 +468,6 @@ export default function DocumentsPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex gap-2">
                     <button
-                      onClick={handlePreviewDocuments}
-                      disabled={selectedOrders.length === 0 || loading}
-                      className="bg-gray-700 text-white px-3 py-2 rounded hover:bg-gray-800 disabled:opacity-50 text-xs sm:text-sm flex items-center justify-center"
-                    >
-                      <Eye className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
-                      <span className="hidden sm:inline">ดูตัวอย่าง ({selectedOrders.length})</span>
-                    </button>
-                    
-                    <button
                       onClick={handlePrintAllWithConfirm}
                       disabled={selectedOrders.length === 0 || loading}
                       className="bg-gray-600 text-white px-3 py-2 rounded hover:bg-gray-700 disabled:opacity-50 text-xs sm:text-sm flex items-center justify-center"
@@ -918,7 +477,7 @@ export default function DocumentsPage() {
                     </button>
                     
                     <button
-                      onClick={handleDownloadAllWithConfirm}
+                      onClick={handlePrintAllWithConfirm}
                       disabled={selectedOrders.length === 0 || loading}
                       className="bg-gray-500 text-white px-3 py-2 rounded hover:bg-gray-600 disabled:opacity-50 text-xs sm:text-sm flex items-center justify-center"
                     >
@@ -945,14 +504,6 @@ export default function DocumentsPage() {
                 
                 <div className="flex gap-2">
                   <button
-                    onClick={handlePreviewDocuments}
-                    disabled={selectedOrders.length === 0 || loading}
-                    className="bg-gray-700 text-white px-3 py-2 rounded hover:bg-gray-800 disabled:opacity-50 text-xs flex items-center justify-center"
-                  >
-                    <Eye className="w-3 h-3" />
-                  </button>
-                  
-                  <button
                     onClick={handlePrintAllWithConfirm}
                     disabled={selectedOrders.length === 0 || loading}
                     className="bg-gray-600 text-white px-3 py-2 rounded hover:bg-gray-700 disabled:opacity-50 text-xs flex items-center justify-center"
@@ -961,7 +512,7 @@ export default function DocumentsPage() {
                   </button>
                   
                   <button
-                    onClick={handleDownloadAllWithConfirm}
+                    onClick={handlePrintAllWithConfirm}
                     disabled={selectedOrders.length === 0 || loading}
                     className="bg-gray-500 text-white px-3 py-2 rounded hover:bg-gray-600 disabled:opacity-50 text-xs flex items-center justify-center"
                   >
@@ -1219,76 +770,7 @@ export default function DocumentsPage() {
           </div>
         )}
 
-        {/* Preview Modal */}
-        {showPreview && previewData && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg max-w-4xl max-h-[90vh] overflow-hidden flex flex-col w-full">
-              {/* Header */}
-              <div className="flex items-center justify-between p-4 border-b">
-                <h3 className="text-lg font-light text-black">ตัวอย่างเอกสาร</h3>
-                <button 
-                  onClick={() => setShowPreview(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              
-              {/* Content */}
-              <div className="flex-1 overflow-y-auto p-4 bg-gray-100">
-                <div className="space-y-6">
-                  {previewData.documents.map((doc, index) => {
-                    const documentData = generateDocumentData(doc, companySettings);
-
-                    return (
-                      <div key={index} className="bg-white border border-gray-300 rounded-lg overflow-hidden shadow-lg">
-                        {/* Action buttons */}
-                        <div className="bg-gray-50 p-2 border-b flex justify-end gap-2">
-                          <button
-                            onClick={() => handlePrintSingle(doc)}
-                            disabled={loading}
-                            className="bg-gray-600 text-white px-3 py-1 rounded text-xs hover:bg-gray-700 disabled:opacity-50 flex items-center"
-                          >
-                            <Printer className="w-3 h-3 sm:mr-1" />
-                            <span className="hidden sm:inline">พิมพ์</span>
-                          </button>
-                          <button
-                            onClick={() => handleDownloadSingle(doc)}
-                            disabled={loading}
-                            className="bg-gray-500 text-white px-3 py-1 rounded text-xs hover:bg-gray-600 disabled:opacity-50 flex items-center"
-                          >
-                            <Download className="w-3 h-3 sm:mr-1" />
-                            <span className="hidden sm:inline">ดาวโหลด</span>
-                          </button>
-                        </div>
-
-                        {/* Document Template */}
-                        <DocumentTemplate data={documentData} />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-              
-              {/* Footer */}
-              <div className="flex items-center justify-between p-4 border-t bg-gray-50">
-                <div className="text-sm text-gray-600">
-                  รวม {previewData.documents.length} เอกสาร
-                </div>
-                
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => setShowPreview(false)}
-                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-100"
-                  >
-                    ปิด
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-          </div>
+        </div>
         )}
 
         {/* Billing Tab Content */}
@@ -1394,7 +876,7 @@ export default function DocumentsPage() {
                       disabled={selectedCustomers.length === 0 || loading}
                       className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 disabled:opacity-50 text-sm flex items-center"
                     >
-                      <Download className="w-4 h-4 mr-1" />
+                      <Printer className="w-4 h-4 mr-1" />
                       สร้างใบวางบิล ({selectedCustomers.length})
                     </button>
                   </div>
@@ -1426,7 +908,7 @@ export default function DocumentsPage() {
                       disabled={selectedCustomers.length === 0 || loading}
                       className="bg-black text-white px-3 py-2 rounded hover:bg-gray-800 disabled:opacity-50 text-sm flex items-center justify-center w-full"
                     >
-                      <Download className="w-4 h-4 mr-2" />
+                      <Printer className="w-4 h-4 mr-2" />
                       สร้างใบวางบิล ({selectedCustomers.length})
                     </button>
                   </div>
@@ -1532,137 +1014,6 @@ export default function DocumentsPage() {
               </div>
             )}
 
-            {/* Billing Preview Modal */}
-            {showBillingPreview && billingPreviewData && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-lg max-w-6xl max-h-[90vh] overflow-hidden flex flex-col w-full">
-                  {/* Header */}
-                  <div className="flex items-center justify-between p-4 border-b">
-                    <h3 className="text-xl font-light text-black">ตัวอย่างใบวางบิล</h3>
-                    <button
-                      onClick={() => setShowBillingPreview(false)}
-                      className="text-gray-500 hover:text-gray-700"
-                    >
-                      <X className="w-6 h-6" />
-                    </button>
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 overflow-y-auto p-4 bg-gray-100">
-                    <div className="space-y-6">
-                      {billingPreviewData.documents.map((doc, index) => {
-                        const billingDateFormat = new Date(doc.actualBillingDate).toLocaleDateString('th-TH');
-                        const dueDateFormat = new Date(doc.dueDate).toLocaleDateString('th-TH');
-
-                        return (
-                          <div key={index} className="bg-white border border-gray-300 rounded-lg overflow-hidden shadow-lg">
-                            {/* Document Header */}
-                            <div className="bg-gray-50 p-4 border-b">
-                              <div className="flex justify-between items-center">
-                                <div>
-                                  <h4 className="text-lg font-light text-black">{doc.customer.name}</h4>
-                                  {doc.customer.companyName && (
-                                    <p className="text-gray-600 text-sm">({doc.customer.companyName})</p>
-                                  )}
-                                </div>
-                                <div className="text-right">
-                                  <div className="text-sm text-gray-600">เลขที่เอกสาร</div>
-                                  <div className="font-light text-black">{doc.docNumber}</div>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Document Content */}
-                            <div className="p-4">
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                <div>
-                                  <div className="text-sm text-gray-600">รอบบิล</div>
-                                  <div className="font-light text-black">{doc.periodDisplay}</div>
-                                </div>
-                                <div>
-                                  <div className="text-sm text-gray-600">วันที่วางบิล</div>
-                                  <div className="font-light text-black">{billingDateFormat}</div>
-                                </div>
-                                <div>
-                                  <div className="text-sm text-gray-600">กำหนดชำระ</div>
-                                  <div className="font-light text-black">{dueDateFormat}</div>
-                                </div>
-                              </div>
-
-                              {/* Delivery Notes Table */}
-                              <div className="bg-gray-50 rounded p-3 mb-4">
-                                <div className="text-sm text-gray-600 mb-3">ใบส่งสินค้าในรอบนี้:</div>
-                                <div className="overflow-x-auto">
-                                  <table className="w-full text-sm">
-                                    <thead>
-                                      <tr className="border-b border-gray-200">
-                                        <th className="text-left py-2 text-gray-600 font-normal">รายการ</th>
-                                        <th className="text-center py-2 text-gray-600 font-normal">จำนวน</th>
-                                        <th className="text-right py-2 text-gray-600 font-normal">ยอดรวม</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {doc.deliveryNotes.map((note, noteIndex) => (
-                                        <tr key={noteIndex} className="border-b border-gray-100 last:border-b-0">
-                                          <td className="py-2 text-gray-700">{note.description}</td>
-                                          <td className="py-2 text-center text-gray-700">{note.quantity.toFixed(1)} กก.</td>
-                                          <td className="py-2 text-right font-light">{formatMoney(note.amount)} บาท</td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              </div>
-
-                              {/* Total */}
-                              <div className="text-right">
-                                <div className="text-lg font-light text-black">
-                                  ยอดรวมทั้งสิ้น: {formatMoney(doc.totalAmount)} บาท
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Footer */}
-                  <div className="flex items-center justify-between p-4 border-t bg-gray-50">
-                    <div className="text-sm text-gray-600">
-                      รวม {billingPreviewData.documents.length} ใบวางบิล
-                    </div>
-
-                    <div className="flex space-x-3">
-                      <button
-                        onClick={() => setShowBillingPreview(false)}
-                        className="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-100"
-                      >
-                        ปิด
-                      </button>
-
-                      <button
-                        onClick={handlePrintAllBilling}
-                        disabled={loading}
-                        className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 disabled:opacity-50 flex items-center"
-                      >
-                        <Printer className="w-4 h-4 mr-2" />
-                        พิมพ์ทั้งหมด
-                      </button>
-
-                      <button
-                        onClick={handleDownloadAllBilling}
-                        disabled={loading}
-                        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 flex items-center"
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        ดาวน์โหลด
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
