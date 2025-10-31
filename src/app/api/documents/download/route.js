@@ -27,6 +27,7 @@ export async function POST(request) {
     // Determine filename and content type based on number of documents
     if (documents.length === 1) {
       const filename = `${documents[0].customer.name}_${documents[0].docNumber}.pdf`;
+      const encodedFilename = encodeURIComponent(filename);
 
       // Ensure content is a proper Buffer for PDF
       const pdfBuffer = Buffer.isBuffer(content) ? content : Buffer.from(content);
@@ -34,7 +35,7 @@ export async function POST(request) {
       return new NextResponse(pdfBuffer, {
         headers: {
           'Content-Type': 'application/pdf',
-          'Content-Disposition': `attachment; filename="${filename}"`,
+          'Content-Disposition': `attachment; filename*=UTF-8''${encodedFilename}`,
           'Content-Length': pdfBuffer.length.toString(),
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
@@ -42,6 +43,7 @@ export async function POST(request) {
       });
     } else {
       const filename = `documents_${Date.now()}.zip`;
+      const encodedFilename = encodeURIComponent(filename);
 
       // Ensure content is a proper Buffer for ZIP
       const zipBuffer = Buffer.isBuffer(content) ? content : Buffer.from(content);
@@ -49,7 +51,7 @@ export async function POST(request) {
       return new NextResponse(zipBuffer, {
         headers: {
           'Content-Type': 'application/zip',
-          'Content-Disposition': `attachment; filename="${filename}"`,
+          'Content-Disposition': `attachment; filename*=UTF-8''${encodedFilename}`,
           'Content-Length': zipBuffer.length.toString(),
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
