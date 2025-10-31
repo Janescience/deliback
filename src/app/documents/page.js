@@ -268,21 +268,8 @@ export default function DocumentsPage() {
 
       const htmlContent = response.data.html;
 
-      const printWindow = window.open('', '_blank');
-
-      if (!printWindow) {
-        alert('กรุณาอนุญาตให้เปิด popup ในเบราว์เซอร์เพื่อใช้งานการปริ้น');
-        return;
-      }
-
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-
-      setTimeout(() => {
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
-      }, 500);
+      // Use helper function to handle printing
+      handlePrint(htmlContent);
 
     } catch (error) {
       console.error('Failed to print billing documents:', error);
@@ -472,24 +459,9 @@ export default function DocumentsPage() {
         });
         
         const htmlContent = printResponse.data.html;
-        
-        // Open print window with all documents
-        const printWindow = window.open('', '_blank');
-        
-        if (!printWindow) {
-          alert('กรุณาอนุญาตให้เปิด popup ในเบราว์เซอร์เพื่อใช้งานการปริ้น\n\nหมายเหตุ: หากต้องการไม่แสดงเลขหน้า กรุณาไปที่ Print Settings > More settings > Headers and footers (ปิด)');
-          return;
-        }
-        
-        printWindow.document.write(htmlContent);
-        printWindow.document.close();
-        
-        // Use setTimeout to ensure content is loaded
-        setTimeout(() => {
-          printWindow.focus();
-          printWindow.print();
-          printWindow.close();
-        }, 500);
+
+        // Use helper function to handle printing
+        handlePrint(htmlContent);
       }
     } catch (error) {
       console.error('Failed to generate and print documents:', error);
@@ -545,40 +517,25 @@ export default function DocumentsPage() {
   const handlePrintSingle = async (docData) => {
     try {
       setLoading(true);
-      
+
       // Prepare documents for printing based on type
       let documentsToprint = [docData];
-      
+
       // If it's delivery note (ใบส่งสินค้า), print 2 copies
       if (docData.docType === 'delivery_note') {
         documentsToprint = [docData, docData]; // Duplicate for 2 copies
       }
-      
+
       const response = await axios.post('/api/documents/print', {
         documents: documentsToprint,
         userId: 'default'
       });
-      
+
       const htmlContent = response.data.html;
-      
-      // Open print window
-      const printWindow = window.open('', '_blank');
-      
-      if (!printWindow) {
-        alert('กรุณาอนุญาตให้เปิด popup ในเบราว์เซอร์เพื่อใช้งานการปริ้น\n\nหมายเหตุ: หากต้องการไม่แสดงเลขหน้า กรุณาไปที่ Print Settings > More settings > Headers and footers (ปิด)');
-        return;
-      }
-      
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-      
-      // Use setTimeout to ensure content is loaded
-      setTimeout(() => {
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
-      }, 500);
-      
+
+      // Use helper function to handle printing
+      handlePrint(htmlContent);
+
     } catch (error) {
       console.error('Failed to print single document:', error);
       alert('เกิดข้อผิดพลาดในการปริ้น');
@@ -592,10 +549,10 @@ export default function DocumentsPage() {
 
     try {
       setLoading(true);
-      
+
       // Prepare documents for printing with correct copies
       const documentsToprint = [];
-      
+
       previewData.documents.forEach(doc => {
         if (doc.docType === 'delivery_note') {
           // Add 2 copies for delivery notes (ใบส่งสินค้า)
@@ -605,32 +562,17 @@ export default function DocumentsPage() {
           documentsToprint.push(doc);
         }
       });
-      
+
       const response = await axios.post('/api/documents/print', {
         documents: documentsToprint,
         userId: 'default'
       });
-      
+
       const htmlContent = response.data.html;
-      
-      // Open print window with all documents
-      const printWindow = window.open('', '_blank');
-      
-      if (!printWindow) {
-        alert('กรุณาอนุญาตให้เปิด popup ในเบราว์เซอร์เพื่อใช้งานการปริ้น\n\nหมายเหตุ: หากต้องการไม่แสดงเลขหน้า กรุณาไปที่ Print Settings > More settings > Headers and footers (ปิด)');
-        return;
-      }
-      
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-      
-      // Use setTimeout to ensure content is loaded
-      setTimeout(() => {
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
-      }, 500);
-      
+
+      // Use helper function to handle printing
+      handlePrint(htmlContent);
+
     } catch (error) {
       console.error('Failed to print documents:', error);
       alert('เกิดข้อผิดพลาดในการปริ้น');
@@ -650,6 +592,93 @@ export default function DocumentsPage() {
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  // Helper function to handle printing across different devices
+  const handlePrint = (htmlContent) => {
+    // Check if it's mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    if (isMobile) {
+      // For mobile: Create a full-screen overlay with print content
+      const printOverlay = document.createElement('div');
+      printOverlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: white;
+        z-index: 9999;
+        overflow: auto;
+        padding: 20px;
+      `;
+
+      const closeButton = document.createElement('button');
+      closeButton.innerHTML = '❌ ปิด';
+      closeButton.style.cssText = `
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background: #ff5555;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 5px;
+        font-size: 16px;
+        z-index: 10000;
+        cursor: pointer;
+      `;
+      closeButton.onclick = () => document.body.removeChild(printOverlay);
+
+      const printButton = document.createElement('button');
+      printButton.innerHTML = '🖨️ พิมพ์';
+      printButton.style.cssText = `
+        position: fixed;
+        top: 10px;
+        right: 80px;
+        background: #4CAF50;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 5px;
+        font-size: 16px;
+        z-index: 10000;
+        cursor: pointer;
+      `;
+      printButton.onclick = () => {
+        closeButton.style.display = 'none';
+        printButton.style.display = 'none';
+        window.print();
+        setTimeout(() => {
+          closeButton.style.display = 'block';
+          printButton.style.display = 'block';
+        }, 1000);
+      };
+
+      printOverlay.innerHTML = htmlContent;
+      printOverlay.appendChild(closeButton);
+      printOverlay.appendChild(printButton);
+      document.body.appendChild(printOverlay);
+    } else {
+      // For desktop: Use popup window
+      const printWindow = window.open('', '_blank');
+
+      if (!printWindow) {
+        alert('กรุณาอนุญาตให้เปิด popup ในเบราว์เซอร์เพื่อใช้งานการปริ้น\n\nหมายเหตุ: หากต้องการไม่แสดงเลขหน้า กรุณาไปที่ Print Settings > More settings > Headers and footers (ปิด)');
+        return;
+      }
+
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+
+      // Use setTimeout to ensure content is loaded
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+      }, 500);
+    }
   };
 
   const fetchBillingHistory = async () => {

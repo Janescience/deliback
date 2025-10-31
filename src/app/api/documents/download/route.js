@@ -27,18 +27,32 @@ export async function POST(request) {
     // Determine filename and content type based on number of documents
     if (documents.length === 1) {
       const filename = `${documents[0].customer.name}_${documents[0].docNumber}.pdf`;
-      return new NextResponse(content, {
+
+      // Ensure content is a proper Buffer for PDF
+      const pdfBuffer = Buffer.isBuffer(content) ? content : Buffer.from(content);
+
+      return new NextResponse(pdfBuffer, {
         headers: {
           'Content-Type': 'application/pdf',
-          'Content-Disposition': `attachment; filename="${filename}"`
+          'Content-Disposition': `attachment; filename="${filename}"`,
+          'Content-Length': pdfBuffer.length.toString(),
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
         }
       });
     } else {
       const filename = `documents_${Date.now()}.zip`;
-      return new NextResponse(content, {
+
+      // Ensure content is a proper Buffer for ZIP
+      const zipBuffer = Buffer.isBuffer(content) ? content : Buffer.from(content);
+
+      return new NextResponse(zipBuffer, {
         headers: {
           'Content-Type': 'application/zip',
-          'Content-Disposition': `attachment; filename="${filename}"`
+          'Content-Disposition': `attachment; filename="${filename}"`,
+          'Content-Length': zipBuffer.length.toString(),
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
         }
       });
     }
@@ -92,7 +106,6 @@ async function generateMockZip(documents, companySettings) {
 
     return Buffer.from(zipBuffer);
   } catch (error) {
-    console.error('Error in generateMockZip:', error);
     throw error;
   }
 }
@@ -113,9 +126,7 @@ async function generatePDF(document, companySettings) {
         const base64 = Buffer.from(logoResponse.data).toString('base64');
         const mimeType = logoResponse.headers['content-type'] || 'image/png';
         processedSettings.logo.url = `data:${mimeType};base64,${base64}`;
-        console.log('Logo converted to base64 successfully');
       } catch (logoError) {
-        console.warn('Error converting logo to base64:', logoError.message);
         processedSettings.logo.url = '';
       }
     }
@@ -167,11 +178,15 @@ async function generatePDF(document, companySettings) {
       const page = await browser.newPage();
       await page.setContent(html, { waitUntil: 'domcontentloaded' });
 
-      // Generate PDF
+      // Generate PDF with better compatibility settings
       const pdfBuffer = await page.pdf({
         format: 'A4',
         printBackground: true,
-        margin: { top: '20mm', bottom: '20mm', left: '15mm', right: '15mm' }
+        margin: { top: '20mm', bottom: '20mm', left: '15mm', right: '15mm' },
+        preferCSSPageSize: false,
+        displayHeaderFooter: false,
+        tagged: false,
+        outline: false
       });
 
       await browser.close();
@@ -179,8 +194,6 @@ async function generatePDF(document, companySettings) {
       return pdfBuffer;
 
     } catch (puppeteerError) {
-      console.warn('Puppeteer failed, falling back to simple HTML content:', puppeteerError.message);
-
       // Fallback: return HTML content as "PDF" (for development purposes)
       const fallbackContent = `
         PDF Generation Failed - Development Mode
@@ -198,7 +211,6 @@ async function generatePDF(document, companySettings) {
     }
 
   } catch (error) {
-    console.error('Error generating PDF:', error);
     throw error;
   }
 }
