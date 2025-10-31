@@ -114,6 +114,7 @@ async function generateMockZip(documents, companySettings) {
 
 async function generatePDF(document, companySettings) {
   try {
+    console.log('Starting PDF generation for document:', document.docNumber);
 
     // Convert logo URL to base64 if available for better PDF compatibility
     let processedSettings = JSON.parse(JSON.stringify(companySettings)); // Deep clone to preserve all data
@@ -312,6 +313,9 @@ async function generatePDF(document, companySettings) {
 
       if (process.env.NODE_ENV === 'production') {
         // Use puppeteer-core with Chromium for production
+        const executablePath = await chromium.executablePath();
+        console.log('Using Chromium executable:', executablePath);
+
         browser = await puppeteerCore.launch({
           args: [
             ...chromium.args,
@@ -323,12 +327,18 @@ async function generatePDF(document, companySettings) {
             '--no-zygote',
             '--disable-gpu',
             '--disable-web-security',
-            '--allow-running-insecure-content'
+            '--allow-running-insecure-content',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding',
+            '--disable-features=TranslateUI',
+            '--disable-ipc-flooding-protection'
           ],
           defaultViewport: chromium.defaultViewport,
-          executablePath: await chromium.executablePath(),
+          executablePath,
           headless: 'new',
           ignoreHTTPSErrors: true,
+          timeout: 10000,
         });
       } else {
         // Use regular puppeteer for development (uses local Chrome)
@@ -366,6 +376,8 @@ async function generatePDF(document, companySettings) {
 
     } catch (puppeteerError) {
       console.error('Puppeteer PDF generation failed:', puppeteerError.message);
+      console.error('Error stack:', puppeteerError.stack);
+      console.error('Falling back to jsPDF generation...');
 
       // Use jsPDF as fallback with better compatibility
       try {
