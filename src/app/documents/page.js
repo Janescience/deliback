@@ -271,89 +271,28 @@ export default function DocumentsPage() {
 
   // Helper function to handle printing across different devices
   const handlePrint = (htmlContent) => {
-    // Check if it's mobile device
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    // Use popup window for all devices to ensure consistent behavior
+    const printWindow = window.open('', '_blank');
 
-    if (isMobile) {
-      // For mobile: Create a full-screen overlay with print content
-      const printOverlay = document.createElement('div');
-      printOverlay.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: white;
-        z-index: 9999;
-        overflow: auto;
-        padding: 20px;
-      `;
-
-      const closeButton = document.createElement('button');
-      closeButton.innerHTML = '❌ ปิด';
-      closeButton.style.cssText = `
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        background: #ff5555;
-        color: white;
-        border: none;
-        padding: 10px 15px;
-        border-radius: 5px;
-        font-size: 16px;
-        z-index: 10000;
-        cursor: pointer;
-      `;
-      closeButton.onclick = () => document.body.removeChild(printOverlay);
-
-      const printButton = document.createElement('button');
-      printButton.innerHTML = '🖨️ พิมพ์';
-      printButton.style.cssText = `
-        position: fixed;
-        top: 10px;
-        right: 80px;
-        background: #4CAF50;
-        color: white;
-        border: none;
-        padding: 10px 15px;
-        border-radius: 5px;
-        font-size: 16px;
-        z-index: 10000;
-        cursor: pointer;
-      `;
-      printButton.onclick = () => {
-        closeButton.style.display = 'none';
-        printButton.style.display = 'none';
-        window.print();
-        setTimeout(() => {
-          closeButton.style.display = 'block';
-          printButton.style.display = 'block';
-        }, 1000);
-      };
-
-      printOverlay.innerHTML = htmlContent;
-      printOverlay.appendChild(closeButton);
-      printOverlay.appendChild(printButton);
-      document.body.appendChild(printOverlay);
-    } else {
-      // For desktop: Use popup window
-      const printWindow = window.open('', '_blank');
-
-      if (!printWindow) {
-        alert('กรุณาอนุญาตให้เปิด popup ในเบราว์เซอร์เพื่อใช้งานการปริ้น\n\nหมายเหตุ: หากต้องการไม่แสดงเลขหน้า กรุณาไปที่ Print Settings > More settings > Headers and footers (ปิด)');
-        return;
-      }
-
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-
-      // Use setTimeout to ensure content is loaded
-      setTimeout(() => {
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
-      }, 500);
+    if (!printWindow) {
+      alert('กรุณาอนุญาตให้เปิด popup ในเบราว์เซอร์เพื่อใช้งานการปริ้น\n\nหมายเหตุ: หากต้องการไม่แสดงเลขหน้า กรุณาไปที่ Print Settings > More settings > Headers and footers (ปิด)');
+      return;
     }
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+
+    // Use setTimeout to ensure content is loaded
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+
+      // Don't auto-close on mobile to allow user to see the document
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      if (!isMobile) {
+        printWindow.close();
+      }
+    }, 500);
   };
 
   const fetchBillingHistory = async () => {
