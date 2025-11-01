@@ -140,7 +140,6 @@ export async function POST(request) {
     
     // Use current Thailand date as the actual billing date (when user generates the bill)
     const actualBillingDate = getThailandToday();
-    const dateStr = actualBillingDate.toISOString().slice(2, 10).replace(/-/g, '').slice(0, 6); // YYMMDD format
 
     // Calculate due date (+7 days from billing date using Thailand timezone)
     const dueDate = addThailandDays(actualBillingDate, 7);
@@ -155,6 +154,11 @@ export async function POST(request) {
       billingYear = today.getUTCFullYear();
       billingMonth = today.getUTCMonth() + 1; // Convert to 1-based month
     }
+
+    // Use billing period for document number (MMYY format)
+    const periodMonth = String(billingMonth).padStart(2, '0');
+    const periodYear = String(billingYear).slice(-2);
+    const dateStr = `${periodMonth}${periodYear}`; // MMYY format
 
     // Calculate period dates using Thailand timezone
     let periodStart, periodEnd;
@@ -190,8 +194,8 @@ export async function POST(request) {
         docType: 'billing',
         actualBillingDate: actualBillingDate.toISOString().split('T')[0], // วันที่วางบิล (วันที่สร้าง)
         dueDate: dueDate.toISOString().split('T')[0], // กำหนดชำระ (+7 วัน)
-        periodMonth: `${billingMonth}/${billingYear}`, // รอบบิล (เดือน/ปี)
-        periodDisplay: `${billingMonth}/${billingYear} (${periodStart.getUTCDate()}/${periodStart.getUTCMonth() + 1} - ${periodEnd.getUTCDate()}/${periodEnd.getUTCMonth() + 1})`, // รอบบิลพร้อมช่วงวันที่
+        periodMonth: `${billingMonth}/${billingYear + 543}`, // รอบบิล (เดือน/ปี พศ)
+        periodDisplay: `${billingMonth}/${billingYear + 543} (${periodStart.getUTCDate()}/${periodStart.getUTCMonth() + 1} - ${periodEnd.getUTCDate()}/${periodEnd.getUTCMonth() + 1})`, // รอบบิลพร้อมช่วงวันที่
         periodStart: periodStart.toISOString().split('T')[0],
         periodEnd: periodEnd.toISOString().split('T')[0],
         customer: {

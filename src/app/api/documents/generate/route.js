@@ -77,6 +77,7 @@ export async function POST(request) {
         docNumber,
         docType,
         date: new Date().toISOString().split('T')[0],
+        deliveryDate: orders[0]?.delivery_date || new Date().toISOString().split('T')[0], // วันที่สั่งซื้อจริง
         dueDate: payMethod === 'credit' ? calculateDueDate() : new Date().toISOString().split('T')[0],
         customer: {
           name: customer.name,

@@ -107,9 +107,18 @@ export const getDocumentTitle = (docType, companySettings) => {
 // Generate document template data
 export const generateDocumentData = (document, companySettings) => {
   // Handle different date fields for different document types
-  const dateFormat = document.docType === 'billing'
-    ? new Date(document.actualBillingDate).toLocaleDateString('th-TH')
-    : new Date(document.date).toLocaleDateString('th-TH');
+  let dateFormat, orderDateFormat;
+
+  if (document.docType === 'billing') {
+    dateFormat = new Date(document.actualBillingDate).toLocaleDateString('th-TH');
+  } else if (document.docType === 'delivery_note' || document.docType === 'receipt') {
+    // For delivery notes and receipts: current date (print date)
+    dateFormat = new Date().toLocaleDateString('th-TH');
+    // Order date from deliveryDate
+    orderDateFormat = new Date(document.deliveryDate || document.date).toLocaleDateString('th-TH');
+  } else {
+    dateFormat = new Date(document.date).toLocaleDateString('th-TH');
+  }
 
   // Calculate due date using document type and company settings
   const docDate = document.docType === 'billing'
@@ -125,6 +134,7 @@ export const generateDocumentData = (document, companySettings) => {
 
   return {
     dateFormat,
+    orderDateFormat,
     dueDateFormat,
     documentTitle,
     subtotal,
@@ -138,6 +148,7 @@ export const generateDocumentData = (document, companySettings) => {
 export const DocumentTemplate = ({ data, className = '' }) => {
   const {
     dateFormat,
+    orderDateFormat,
     dueDateFormat,
     documentTitle,
     subtotal,
@@ -216,9 +227,9 @@ export const DocumentTemplate = ({ data, className = '' }) => {
             <td className=" p-2 font-bold text-xs">
             </td>
             <td className=" p-2 font-bold text-xs">
-              วันที่ทำรายการ<br/>กำหนดชำระเงิน
+              {document.docType === 'billing' ? 'วันที่วางบิล<br/>กำหนดชำระเงิน' : 'วันที่พิมพ์<br/>วันที่สั่งซื้อ'}
             </td>
-            <td className=" p-2" >{dateFormat}<br/>{dueDateFormat}</td>
+            <td className=" p-2" >{document.docType === 'billing' ? `${dateFormat}<br/>${dueDateFormat}` : `${dateFormat}<br/>${orderDateFormat}`}</td>
           </tr>
           <tr>
             <td className=" p-2 font-bold text-xs">
@@ -226,6 +237,19 @@ export const DocumentTemplate = ({ data, className = '' }) => {
             </td>
 
             <td className=" p-2" colSpan="1">{document.customer.address || ''}</td>
+            <td className=" p-2 font-bold text-xs">
+            </td>
+            <td className=" p-2 font-bold text-xs">
+              {document.docType !== 'billing' ? 'กำหนดชำระเงิน' : ''}
+            </td>
+            <td className=" p-2">{document.docType !== 'billing' ? dueDateFormat : ''}</td>
+          </tr>
+          <tr>
+            <td className=" p-2 font-bold text-xs">
+              เบอร์โทรศัพท์
+            </td>
+
+            <td className=" p-2" colSpan="2">{document.customer.telephone || ''}</td>
             <td className=" p-2 font-bold text-xs">
             </td>
             <td className=" p-2 font-bold text-xs">
@@ -398,6 +422,7 @@ export const generateDocumentHTML = (document, companySettings, isPageBreak = fa
   const data = generateDocumentData(document, companySettings);
   const {
     dateFormat,
+    orderDateFormat,
     dueDateFormat,
     documentTitle,
     subtotal,
@@ -463,22 +488,22 @@ export const generateDocumentHTML = (document, companySettings, isPageBreak = fa
 
             </td>
           <td style="padding: 8px; font-weight: bold; font-size: 12px;">
-            วันที่ทำรายการ<br/>กำหนดชำระเงิน
+            ${document.docType === 'billing' ? 'วันที่วางบิล<br/>กำหนดชำระเงิน' : 'วันที่พิมพ์<br/>วันที่สั่งซื้อ'}
           </td>
-          <td style="padding: 8px;">${dateFormat}<br/>${dueDateFormat}</td>
+          <td style="padding: 8px;">${document.docType === 'billing' ? `${dateFormat}<br/>${dueDateFormat}` : `${dateFormat}<br/>${orderDateFormat}`}</td>
         </tr>
         <tr>
           <td style="padding: 8px; font-weight: bold; font-size: 12px;">
             ที่อยู่
           </td>
           <td style="padding: 8px;" colspan="1">${document.customer.address || ''}</td>
-          <td className=" p-2 font-bold text-xs">
+          <td style="padding: 8px; font-weight: bold; font-size: 12px;">
 
             </td>
           <td style="padding: 8px; font-weight: bold; font-size: 12px;">
-            ${document.docType === 'billing' ? 'รอบบิล' : ''}
+            ${document.docType !== 'billing' ? 'กำหนดชำระเงิน' : (document.docType === 'billing' ? 'รอบบิล' : '')}
           </td>
-          <td style="padding: 8px;">${document.docType === 'billing' ? document.periodDisplay : ''}</td>
+          <td style="padding: 8px;">${document.docType !== 'billing' ? dueDateFormat : (document.docType === 'billing' ? document.periodDisplay : '')}</td>
         </tr>
         <tr>
           <td style="padding: 8px; font-weight: bold; font-size: 12px;">
