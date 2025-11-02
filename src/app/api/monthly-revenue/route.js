@@ -1,21 +1,23 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Order from '@/models/Order';
+import OrderDetail from '@/models/OrderDetail';
 import mongoose from 'mongoose';
 import { getThailandToday, getThailandCurrentYear } from '@/lib/thailand-time';
 
 export async function GET(request) {
   try {
     await dbConnect();
-    
+
     const startTime = Date.now();
-    
+
     // Use Thailand timezone for current year calculation
     const today = getThailandToday();
     const currentYear = today.getUTCFullYear();
     const { start: yearStart, end: yearEnd } = getThailandCurrentYear();
 
-    // Use MongoDB aggregation pipeline for optimal performance
+
+    // Use MongoDB aggregation pipeline with better join handling
     const result = await Order.aggregate([
       {
         // Filter orders for current year only using Thailand timezone
@@ -29,26 +31,38 @@ export async function GET(request) {
       {
         // Lookup order details to get vegetable quantities
         $lookup: {
-          from: 'orderdetails',
+          from: 'orderdetails', // Collection name should match exactly
           localField: '_id',
           foreignField: 'order_id',
-          as: 'details'
+          as: 'orderDetails',
+          pipeline: [
+            {
+              $project: {
+                quantity: 1,
+                subtotal: 1
+              }
+            }
+          ]
+        }
+      },
+      {
+        // Add calculated fields
+        $addFields: {
+          totalWeight: {
+            $sum: '$orderDetails.quantity'
+          },
+          calculatedTotal: {
+            $sum: '$orderDetails.subtotal'
+          }
         }
       },
       {
         // Group by month and calculate total revenue and total weight
         $group: {
           _id: { $month: '$delivery_date' },
-          revenue: { $sum: '$total' },
-          totalWeight: {
-            $sum: {
-              $reduce: {
-                input: '$details',
-                initialValue: 0,
-                in: { $add: ['$$value', '$$this.quantity'] }
-              }
-            }
-          }
+          revenue: { $sum: { $ifNull: ['$total', '$calculatedTotal'] } },
+          totalWeight: { $sum: '$totalWeight' },
+          orderCount: { $sum: 1 }
         }
       },
       {

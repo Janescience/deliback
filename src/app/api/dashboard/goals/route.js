@@ -26,11 +26,51 @@ export async function GET(request) {
       }
     ]);
 
-    const performance = monthlyPerformance[0] || { ordersActual: 0, revenueActual: 0 };
+    // Get average performance from last 3 months for realistic targets
+    const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 3, 1);
+    const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 1);
 
-    // Set monthly targets (realistic targets based on actual business)
-    const revenueTarget = 100000; // 100,000 บาท
-    const ordersTarget = 200; // 200 ออเดอร์
+    const historicalPerformance = await Order.aggregate([
+      {
+        $match: {
+          delivery_date: { $gte: threeMonthsAgo, $lt: lastMonthEnd }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$delivery_date' },
+            month: { $month: '$delivery_date' }
+          },
+          monthlyOrders: { $sum: 1 },
+          monthlyRevenue: { $sum: '$total' }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          avgOrders: { $avg: '$monthlyOrders' },
+          avgRevenue: { $avg: '$monthlyRevenue' },
+          avgOrderValue: { $avg: { $divide: ['$monthlyRevenue', '$monthlyOrders'] } }
+        }
+      }
+    ]);
+
+    const performance = monthlyPerformance[0] || { ordersActual: 0, revenueActual: 0 };
+    const historical = historicalPerformance[0];
+
+    // Calculate targets based on historical average + 10% growth
+    let revenueTarget, ordersTarget;
+
+    if (historical && historical.avgRevenue > 0) {
+      // Use historical data with 10% growth target
+      revenueTarget = Math.round(historical.avgRevenue * 1.1);
+      ordersTarget = Math.round(historical.avgOrders * 1.1);
+    } else {
+      // Fallback to default values if no historical data
+      revenueTarget = 100000; // 100,000 บาท
+      ordersTarget = 200; // 200 ออเดอร์
+    }
 
     return NextResponse.json({
       success: true,
@@ -39,7 +79,13 @@ export async function GET(request) {
       ordersActual: performance.ordersActual,
       ordersTarget,
       month: today.getMonth() + 1,
-      year: today.getFullYear()
+      year: today.getFullYear(),
+      // Add debug info
+      historical: historical ? {
+        avgOrders: Math.round(historical.avgOrders),
+        avgRevenue: Math.round(historical.avgRevenue),
+        avgOrderValue: Math.round(historical.avgOrderValue)
+      } : null
     });
 
   } catch (error) {

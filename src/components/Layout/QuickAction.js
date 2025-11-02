@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import Avatar from '../Avatar';
 import { ShoppingBasket, PackageOpen,Truck, FileText, ChevronRight, ChevronLeft } from 'lucide-react';
 
 export default function QuickAction() {
   const [isOpen, setIsOpen] = useState(false);
   const [todayVegetableSummary, setTodayVegetableSummary] = useState([]);
   const [todayCustomerSummary, setTodayCustomerSummary] = useState([]);
-  const [expandedCard, setExpandedCard] = useState('vegetable');
+  const [expandedCard, setExpandedCard] = useState('customer');
 
   useEffect(() => {
     fetchTodayOrdersSummary();
@@ -93,7 +94,19 @@ export default function QuickAction() {
         .sort((a, b) => b.totalWeight - a.totalWeight);
       
       const customerArray = Object.values(customerSummary)
-        .sort((a, b) => b.totalAmount - a.totalAmount);
+        .sort((a, b) => {
+          // เรียงตามประเภทชำระเงินก่อน: cash -> credit -> transfer
+          const payMethodOrder = { 'cash': 1, 'credit': 2, 'transfer': 3 };
+          const aOrder = payMethodOrder[a.payMethod] || 4;
+          const bOrder = payMethodOrder[b.payMethod] || 4;
+
+          if (aOrder !== bOrder) {
+            return aOrder - bOrder;
+          }
+
+          // ถ้าประเภทชำระเงินเหมือนกัน จึงเรียงตามยอดเงิน
+          return b.totalAmount - a.totalAmount;
+        });
 
       setTodayVegetableSummary(vegetableArray);
       setTodayCustomerSummary(customerArray);
@@ -255,43 +268,59 @@ export default function QuickAction() {
                   <div className="space-y-2">
                     {todayCustomerSummary.map((customer, index) => (
                       <div key={index} className="border border-gray-100 rounded-lg p-2">
-                        {/* Customer Header */}
-                        <div className="flex justify-between items-center mb-2">
-                          <div className="flex items-center space-x-1">
+                        {/* Customer Header - ลำดับ รูป ชื่อ เอกสาร */}
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center space-x-2">
+                            {/* ลำดับ */}
+                            <div className="bg-gray-200 text-gray-600 rounded-full w-4 h-4 flex items-center justify-center text-xs font-light">
+                              {index + 1}
+                            </div>
+                            {/* รูปลูกค้า */}
+                            <Avatar username={customer.name} size={20} />
+                            {/* ชื่อ */}
                             <span className="font-light text-black text-sm">{customer.name}</span>
-                            <span className={`text-xs px-1 py-1 rounded ${
-                              customer.payMethod === 'cash' 
-                                ? 'bg-gray-100 text-gray-800'
-                                : customer.payMethod === 'credit'
-                                ? 'bg-gray-200 text-gray-900'
-                                : 'bg-gray-150 text-gray-800'
-                            }`}>
-                              {customer.payMethod === 'cash' ? 'เงินสด' 
-                               : customer.payMethod === 'credit' ? 'เครดิต' 
-                               : 'เงินโอน'}
-                            </span>
+                            {/* เอกสาร */}
                             {customer.isPrint && (
                               <div className="flex items-center bg-gray-100 text-gray-700 px-1 py-1 rounded text-xs">
                                 <FileText className="w-3 h-3" />
                               </div>
                             )}
                           </div>
-                          <div className="text-right flex space-x-2 text-xs">
-                            <span className="font-light text-black">{formatWeight(customer.totalWeight)} กก.</span>
-                            <span className="text-gray-300">•</span>
-                            <span className="font-light text-black">{formatMoney(customer.totalAmount)} บ.</span>
-                          </div>
+                          {/* ประเภทชำระเงิน - ชิดขวา */}
+                          <span className={`text-xs px-2 py-1 rounded ${
+                            customer.payMethod === 'cash'
+                              ? 'bg-green-100 text-green-800'
+                              : customer.payMethod === 'credit'
+                              ? 'bg-orange-100 text-orange-800'
+                              : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {customer.payMethod === 'cash' ? 'เงินสด'
+                             : customer.payMethod === 'credit' ? 'เครดิต'
+                             : 'เงินโอน'}
+                          </span>
                         </div>
-                        
+
                         {/* Customer's vegetables */}
-                        <div className="bg-gray-50 rounded p-1">
+                        <div className="bg-gray-50 rounded p-1 mb-2">
                           <div className="grid grid-cols-1 gap-1">
                             {customer.vegetables.map((veg, vegIndex) => (
                               <div key={vegIndex} className="flex justify-between items-center text-xs">
                                 <span className="font-light text-black">- {veg.name}</span>
-                                <span className="font-light text-black">{formatWeight(veg.weight)}</span>
+                                <span className="font-light text-black">{formatWeight(veg.weight)} กก.</span>
                               </div>
                             ))}
+                          </div>
+                        </div>
+
+                        {/* สรุปรายการ */}
+                        <div className="border-t border-gray-200 pt-1">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="font-light text-gray-500">{customer.vegetables.length} รายการ</span>
+                            <div className="flex space-x-2">
+                              <span className="font-light text-black">{formatWeight(customer.totalWeight)} กก.</span>
+                              <span className="text-gray-300">•</span>
+                              <span className="font-light text-black">{formatMoney(customer.totalAmount)} บ.</span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -300,7 +329,7 @@ export default function QuickAction() {
                     {/* Customer Total Summary */}
                     <div className="mt-3 border-t border-gray-200 pt-2">
                       <div className="flex justify-between items-center">
-                        <span className="text-black text-sm">รวมลูกค้า</span>
+                        <span className="text-black text-sm">รวม</span>
                         <div className="text-right flex space-x-2 text-sm">
                           <span className="font-light text-black">{formatWeight(todayCustomerSummary.reduce((sum, customer) => sum + customer.totalWeight, 0))} กก.</span>
                           <span className="font-light text-black">{formatMoney(todayCustomerSummary.reduce((sum, customer) => sum + customer.totalAmount, 0))} บ.</span>

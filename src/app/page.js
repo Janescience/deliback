@@ -303,7 +303,9 @@ export default function Dashboard() {
                 <div className={`text-xs px-2 py-1 rounded-full font-extralight ${
                   dashboardKPI.customerGrowth >= 0 ? 'bg-gray-100 text-black' : 'bg-gray-800 text-white'
                 }`}>
-                  {dashboardKPI.customerGrowth >= 0 ? '+' : ''}{dashboardKPI.customerGrowth}%
+                  {dashboardKPI.customerGrowth === -100 ? '0%' :
+                   dashboardKPI.customerGrowth >= 0 ? `+${Math.round(dashboardKPI.customerGrowth)}%` :
+                   `${Math.round(dashboardKPI.customerGrowth)}%`}
                 </div>
               </div>
               <div className="text-2xl font-extralight text-black mb-1">{dashboardKPI.totalCustomers}</div>
@@ -319,7 +321,9 @@ export default function Dashboard() {
                 <div className={`text-xs px-2 py-1 rounded-full font-extralight ${
                   dashboardKPI.todayOrdersGrowth >= 0 ? 'bg-gray-100 text-black' : 'bg-gray-800 text-white'
                 }`}>
-                  {dashboardKPI.todayOrdersGrowth >= 0 ? '+' : ''}{dashboardKPI.todayOrdersGrowth}%
+                  {dashboardKPI.todayOrdersGrowth === -100 ? '0%' :
+                   dashboardKPI.todayOrdersGrowth >= 0 ? `+${Math.round(dashboardKPI.todayOrdersGrowth)}%` :
+                   `${Math.round(dashboardKPI.todayOrdersGrowth)}%`}
                 </div>
               </div>
               <div className="text-2xl font-extralight text-black mb-1">{dashboardKPI.todayOrders}</div>
@@ -335,7 +339,9 @@ export default function Dashboard() {
                 <div className={`text-xs px-2 py-1 rounded-full font-extralight ${
                   dashboardKPI.todayRevenueGrowth >= 0 ? 'bg-gray-100 text-black' : 'bg-gray-800 text-white'
                 }`}>
-                  {dashboardKPI.todayRevenueGrowth >= 0 ? '+' : ''}{dashboardKPI.todayRevenueGrowth}%
+                  {dashboardKPI.todayRevenueGrowth === -100 ? '0%' :
+                   dashboardKPI.todayRevenueGrowth >= 0 ? `+${Math.round(dashboardKPI.todayRevenueGrowth)}%` :
+                   `${Math.round(dashboardKPI.todayRevenueGrowth)}%`}
                 </div>
               </div>
               <div className="text-2xl font-extralight text-black mb-1">{formatMoney(dashboardKPI.todayRevenue)}฿</div>
@@ -351,7 +357,9 @@ export default function Dashboard() {
                 <div className={`text-xs px-2 py-1 rounded-full font-extralight ${
                   dashboardKPI.newCustomersGrowth >= 0 ? 'bg-gray-100 text-black' : 'bg-gray-800 text-white'
                 }`}>
-                  {dashboardKPI.newCustomersGrowth >= 0 ? '+' : ''}{dashboardKPI.newCustomersGrowth}%
+                  {dashboardKPI.newCustomersGrowth === -100 ? '0%' :
+                   dashboardKPI.newCustomersGrowth >= 0 ? `+${Math.round(dashboardKPI.newCustomersGrowth)}%` :
+                   `${Math.round(dashboardKPI.newCustomersGrowth)}%`}
                 </div>
               </div>
               <div className="text-2xl font-extralight text-black mb-1">{dashboardKPI.newCustomersThisMonth}</div>
@@ -526,7 +534,7 @@ export default function Dashboard() {
                 <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
                   <div className="flex items-center justify-between mb-2">
                     <HandCoins className="w-5 h-5 text-gray-600" />
-                    <span className="text-sm text-gray-500">รายได้ทั้งหมด</span>
+                    <span className="text-sm text-gray-500">รายได้</span>
                   </div>
                   <div className="text-xl font-extralight text-black">{formatMoney(financialSummary.totalRevenue)}</div>
                 </div>
@@ -1054,7 +1062,7 @@ export default function Dashboard() {
 
                       {/* Total orders */}
                       <div className="text-xs sm:text-sm text-gray-500">
-                        รวม {dayStat.totalOrders}
+                        {dayStat.totalOrders}
                       </div>
                     </div>
                   );
