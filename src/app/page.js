@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { HandCoins, Coins, CreditCard, ArrowRightLeft, Check, X, BarChart3, Home, Wallet, Trophy, Users, Calendar, Brain, TrendingUp, AlertTriangle, ShoppingCart, Target, TrendingDown, UserPlus, Clock, Box } from 'lucide-react';
+import { HandCoins, Coins, CreditCard, ArrowRightLeft, Check, X, BarChart3, Home, Wallet, Trophy, Users, Calendar, Brain, TrendingUp, AlertTriangle, ShoppingCart, Target, TrendingDown, Clock, Box } from 'lucide-react';
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function Dashboard() {
@@ -348,22 +348,22 @@ export default function Dashboard() {
               <div className="text-sm text-gray-500">รายได้วันนี้</div>
             </div>
 
-            {/* New Customers This Month */}
+            {/* Average Daily Weight */}
             <div className="bg-white border border-gray-100 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between mb-3">
                 <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center">
-                  <UserPlus className="w-5 h-5 text-gray-700" />
+                  <BarChart3 className="w-5 h-5 text-gray-700" />
                 </div>
                 <div className={`text-xs px-2 py-1 rounded-full font-extralight ${
-                  dashboardKPI.newCustomersGrowth >= 0 ? 'bg-gray-100 text-black' : 'bg-gray-800 text-white'
+                  dashboardKPI.dailyWeightGrowth >= 0 ? 'bg-gray-100 text-black' : 'bg-gray-800 text-white'
                 }`}>
-                  {dashboardKPI.newCustomersGrowth === -100 ? '0%' :
-                   dashboardKPI.newCustomersGrowth >= 0 ? `+${Math.round(dashboardKPI.newCustomersGrowth)}%` :
-                   `${Math.round(dashboardKPI.newCustomersGrowth)}%`}
+                  {dashboardKPI.dailyWeightGrowth === -100 ? '0%' :
+                   dashboardKPI.dailyWeightGrowth >= 0 ? `+${Math.round(dashboardKPI.dailyWeightGrowth)}%` :
+                   `${Math.round(dashboardKPI.dailyWeightGrowth)}%`}
                 </div>
               </div>
-              <div className="text-2xl font-extralight text-black mb-1">{dashboardKPI.newCustomersThisMonth}</div>
-              <div className="text-sm text-gray-500">ลูกค้าใหม่เดือนนี้</div>
+              <div className="text-2xl font-extralight text-black mb-1">{dashboardKPI.avgDailyWeight} กก.</div>
+              <div className="text-sm text-gray-500">เฉลี่ยสั่งต่อวัน</div>
             </div>
           </div>
         )}

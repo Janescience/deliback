@@ -95,16 +95,99 @@ export async function GET(request) {
 
     const newCustomersGrowth = calculateGrowth(newCustomersThisMonth, newCustomersLastMonth);
 
+    // Calculate average daily weight from all orders (last 30 days)
+    const thirtyDaysAgo = addThailandDays(today, -30);
+    const { start: thirtyDaysStart } = getThailandDayRange(thirtyDaysAgo);
+
+    const dailyAverageData = await Order.aggregate([
+      {
+        $match: {
+          delivery_date: { $gte: thirtyDaysStart, $lte: todayEnd }
+        }
+      },
+      {
+        $lookup: {
+          from: 'orderdetails',
+          localField: '_id',
+          foreignField: 'order_id',
+          as: 'orderDetails'
+        }
+      },
+      {
+        $addFields: {
+          totalWeight: { $sum: '$orderDetails.quantity' }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$delivery_date" }
+          },
+          dailyWeight: { $sum: '$totalWeight' }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          avgDailyWeight: { $avg: '$dailyWeight' },
+          totalDays: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const avgDailyWeight = dailyAverageData[0]?.avgDailyWeight || 0;
+    const previousPeriodStart = addThailandDays(thirtyDaysStart, -30);
+    const previousPeriodEnd = addThailandDays(thirtyDaysStart, -1);
+
+    // Get previous 30 days average for comparison
+    const prevDailyAverageData = await Order.aggregate([
+      {
+        $match: {
+          delivery_date: { $gte: previousPeriodStart, $lte: previousPeriodEnd }
+        }
+      },
+      {
+        $lookup: {
+          from: 'orderdetails',
+          localField: '_id',
+          foreignField: 'order_id',
+          as: 'orderDetails'
+        }
+      },
+      {
+        $addFields: {
+          totalWeight: { $sum: '$orderDetails.quantity' }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$delivery_date" }
+          },
+          dailyWeight: { $sum: '$totalWeight' }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          avgDailyWeight: { $avg: '$dailyWeight' }
+        }
+      }
+    ]);
+
+    const prevAvgDailyWeight = prevDailyAverageData[0]?.avgDailyWeight || 0;
+    const dailyWeightGrowth = calculateGrowth(avgDailyWeight, prevAvgDailyWeight);
+
     return NextResponse.json({
       success: true,
       totalCustomers,
       todayOrders: todayOrdersCount,
       todayRevenue,
-      newCustomersThisMonth,
+      avgDailyWeight: Math.round(avgDailyWeight * 100) / 100, // round to 2 decimals
       customerGrowth,
       todayOrdersGrowth,
       todayRevenueGrowth,
-      newCustomersGrowth
+      dailyWeightGrowth
     });
 
   } catch (error) {
