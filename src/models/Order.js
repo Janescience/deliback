@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import './Counter.js'; // Import Counter model to register schema
 
 const OrderSchema = new mongoose.Schema({
   created_date: {
