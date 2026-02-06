@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1170" height="2532" viewBox="0 0 1170 2532" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="2532" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0b0b0f"/>
+      <stop offset="1" stop-color="#12121a"/>
+    </linearGradient>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="18" result="blur"/>
+      <feColorMatrix in="blur" type="matrix"
+        values="1 0 0 0 0
+                0 1 0 0 0
+                0 0 1 0 0
+                0 0 0 0.25 0" result="shadow"/>
+      <feMerge>
+        <feMergeNode in="shadow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1170" height="2532" fill="url(#bg)"/>
+
+  <!-- center mark -->
+  <g filter="url(#soft)" transform="translate(0, 0)">
+    <g transform="translate(585 1180) scale(10) translate(-12 -12)" stroke="#ffffff" stroke-opacity="0.92" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z"/>
+      <path d="m7 16.5-4.74-2.85"/>
+      <path d="m7 16.5 5-3"/>
+      <path d="M7 16.5v5.17"/>
+      <path d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z"/>
+      <path d="m17 16.5-5-3"/>
+      <path d="m17 16.5 4.74-2.85"/>
+      <path d="M17 16.5v5.17"/>
+      <path d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z"/>
+      <path d="M12 8 7.26 5.15"/>
+      <path d="m12 8 4.74-2.85"/>
+      <path d="M12 13.5V8"/>
+    </g>
+  </g>
+
+  <text x="585" y="1450" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system" font-size="44" fill="#ffffff" fill-opacity="0.92" letter-spacing="2">
+    ORDIX
+  </text>
+  <text x="585" y="1510" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system" font-size="22" fill="#ffffff" fill-opacity="0.55">
+    Smart order operations
+  </text>
+</svg>
+

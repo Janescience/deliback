@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { ChartArea, ShoppingCart, Wallet, User, Box, Calendar, Settings, ChevronDown, Printer, Boxes, Cog, History } from 'lucide-react';
+import { ChartArea, ShoppingCart, Wallet, User, Box, Calendar, Settings, ChevronDown, Printer, Cog, History } from 'lucide-react';
+import { Boxes } from 'lucide-react';
 
 export default function Sidebar() {
   const pathname = usePathname();

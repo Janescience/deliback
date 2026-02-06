@@ -21,6 +21,8 @@ export default function Dashboard() {
   const [isMobile, setIsMobile] = useState(false);
   const [activeCustomerTab, setActiveCustomerTab] = useState('revenue');
   const [activeVegetableTab, setActiveVegetableTab] = useState('weight');
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [availableYears, setAvailableYears] = useState([new Date().getFullYear()]);
 
   // Loading states
   const [loadingFinancial, setLoadingFinancial] = useState(true);
@@ -37,7 +39,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchFinancialSummary();
-    fetchMonthlyRevenue();
+    fetchMonthlyRevenue(selectedYear);
     fetchTopCustomers();
     fetchOutstandingDebtCustomers();
     fetchHighOrderCustomers();
@@ -58,6 +60,11 @@ export default function Dashboard() {
 
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Re-fetch monthly revenue when year changes
+  useEffect(() => {
+    fetchMonthlyRevenue(selectedYear);
+  }, [selectedYear]);
 
 
 
@@ -82,18 +89,14 @@ export default function Dashboard() {
     }
   };
 
-  const fetchMonthlyRevenue = async () => {
+  const fetchMonthlyRevenue = async (year) => {
     try {
       setLoadingRevenue(true);
-      console.log('Fetching monthly revenue...');
-      const startTime = Date.now();
-
-      const response = await axios.get('/api/monthly-revenue');
-
-      const endTime = Date.now();
-      console.log(`Monthly revenue fetched in ${endTime - startTime}ms`);
-
+      const response = await axios.get(`/api/monthly-revenue${year ? `?year=${year}` : ''}`);
       setMonthlyRevenue(response.data.data);
+      if (response.data.availableYears?.length > 0) {
+        setAvailableYears(response.data.availableYears);
+      }
     } catch (error) {
       console.error('Failed to fetch monthly revenue:', error);
     } finally {
@@ -635,9 +638,9 @@ export default function Dashboard() {
 
               {/* Chart Skeleton */}
               <div className="h-64 sm:h-80 bg-gray-50 rounded flex items-end justify-around px-4 py-4 sm:p-4">
-                {[...Array(12)].map((_, i) => (
+                {[65, 45, 80, 35, 55, 70, 40, 90, 50, 75, 60, 85].map((h, i) => (
                   <div key={i} className="flex flex-col items-center space-y-1">
-                    <div className={`w-6 bg-gray-200 rounded animate-pulse`} style={{height: `${20 + Math.random() * 80}%`}}></div>
+                    <div className="w-6 bg-gray-200 rounded animate-pulse" style={{height: `${h}%`}}></div>
                     <div className="w-8 h-2 bg-gray-200 rounded animate-pulse"></div>
                   </div>
                 ))}
@@ -649,20 +652,29 @@ export default function Dashboard() {
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
               <div className="flex items-center">
                 <BarChart3 className="w-6 h-6 text-gray-700 mr-3" />
-                <h2 className="text-lg font-extralight text-black">ภาพรวมธุรกิจ {new Date().getFullYear()}</h2>
+                <h2 className="text-lg font-extralight text-black">ภาพรวมธุรกิจ</h2>
               </div>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-200"
+              >
+                {availableYears.map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
             </div>
 
             <div className="p-4 sm:p-4 px-0 sm:px-4">
               {/* Legend Section */}
-              <div className="flex items-center justify-end gap-3 mb-3 px-4 sm:px-0">
+              <div className="flex items-center justify-end gap-4 mb-3 px-4 sm:px-0">
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-gray-200"></div>
+                  <div className="w-4 h-4 rounded bg-gray-800"></div>
                   <span className="text-sm text-gray-600">รายได้ (บาท)</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-[2px] bg-gray-600"></div>
-                  <span className="text-sm text-gray-600">จำนวน (กก.)</span>
+                  <div className="w-4 h-1 rounded bg-emerald-500"></div>
+                  <span className="text-sm text-gray-600">น้ำหนัก (กก.)</span>
                 </div>
               </div>
 
@@ -670,22 +682,22 @@ export default function Dashboard() {
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart
                     data={monthlyRevenue}
-                    margin={{ 
-                      top: isMobile ? 5 : 30, 
-                      right: isMobile ? 0 : 30, 
-                      left: isMobile ? 0 : 20, 
-                      bottom: isMobile ? 5 : 20 
+                    margin={{
+                      top: isMobile ? 25 : 40,
+                      right: isMobile ? 5 : 40,
+                      left: isMobile ? 0 : 20,
+                      bottom: isMobile ? 5 : 20
                     }}
                   >
-                    <CartesianGrid 
-                      strokeDasharray="3 3" 
-                      stroke="#f0f0f0" 
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="#f0f0f0"
                       horizontal={true}
                       vertical={false}
                     />
-                    <XAxis 
-                      dataKey="month" 
-                      tick={{ fontSize: isMobile ? 10 : 14 }}
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: isMobile ? 10 : 12 }}
                       axisLine={{ stroke: '#e0e0e0' }}
                       tickLine={{ stroke: '#e0e0e0' }}
                       interval={0}
@@ -694,75 +706,87 @@ export default function Dashboard() {
                       height={isMobile ? 25 : 40}
                     />
                     {/* แสดง YAxis สำหรับรายได้ด้านซ้าย */}
-                    <YAxis 
+                    <YAxis
                       yAxisId="revenue"
                       orientation="left"
                       tickFormatter={(value) => `${(value/1000)}k`}
-                      stroke="#4b5563"
-                      fontSize={isMobile ? 10 : 14}
-                      tick={{ fontSize: isMobile ? 10 : 14 }}
+                      stroke="#374151"
+                      fontSize={isMobile ? 10 : 12}
+                      tick={{ fontSize: isMobile ? 10 : 12 }}
                     />
-                    {/* แสดง YAxis สำหรับจำนวนด้านขวา */}
-                    <YAxis 
+                    {/* แสดง YAxis สำหรับน้ำหนักด้านขวา */}
+                    <YAxis
                       yAxisId="weight"
                       orientation="right"
                       tickFormatter={(value) => `${value}`}
-                      stroke="#6b7280"
-                      fontSize={isMobile ? 10 : 14}
-                      tick={{ fontSize: isMobile ? 10 : 14 }}
+                      stroke="#10b981"
+                      fontSize={isMobile ? 10 : 12}
+                      tick={{ fontSize: isMobile ? 10 : 12, fill: '#10b981' }}
                     />
-                    <Tooltip 
+                    <Tooltip
                       formatter={(value, name) => {
                         if (name === 'revenue') {
                           return [formatMoney(value) + ' บาท', 'รายได้'];
                         } else if (name === 'totalWeight') {
-                          return [formatWeight(value) + ' กก.', 'จำนวน'];
+                          return [formatWeight(value) + ' กก.', 'น้ำหนัก'];
                         }
                         return [value, name];
                       }}
-                      labelStyle={{ color: '#000' }}
-                      contentStyle={{ 
-                        backgroundColor: 'white', 
+                      labelFormatter={(label) => {
+                        const month = monthlyRevenue.find(m => m.month === label);
+                        return month ? month.monthName : label;
+                      }}
+                      labelStyle={{ color: '#000', fontWeight: 500 }}
+                      contentStyle={{
+                        backgroundColor: 'white',
                         border: '1px solid #e0e0e0',
-                        borderRadius: '6px',
-                        padding: '8px 12px'
+                        borderRadius: '8px',
+                        padding: '10px 14px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
                       }}
                     />
                     {/* แสดงรายได้เป็นแท่ง */}
                     <Bar
                       yAxisId="revenue"
                       dataKey="revenue"
-                      name="รายได้"
-                      fill="#e5e7eb"
-                      stroke="#4b5563"
+                      name="revenue"
+                      fill="#374151"
                       radius={[4, 4, 0, 0]}
-                      label={{ 
-                        position: 'center',
-                        fontSize: isMobile ? 8 : 14,
-                        fill: '#4b5563',
-                        formatter: (value) => isMobile ? `${Math.round(value/1000)}k` : formatMoney(value)
+                      label={{
+                        position: 'inside',
+                        fontSize: isMobile ? 8 : 11,
+                        fill: '#fff',
+                        fontWeight: 500,
+                        formatter: (value) => value > 0 ? (isMobile ? `${Math.round(value/1000)}k` : formatMoney(value)) : ''
                       }}
                     />
-                    {/* แสดงจำนวนเป็นเส้น */}
+                    {/* แสดงน้ำหนักเป็นเส้น */}
                     <Line
                       yAxisId="weight"
                       type="monotone"
                       dataKey="totalWeight"
-                      name="จำนวน"
-                      stroke="#6b7280"
-                      strokeWidth={2}
-                      dot={{ 
-                        fill: '#6b7280',
+                      name="totalWeight"
+                      stroke="#10b981"
+                      strokeWidth={3}
+                      dot={{
+                        fill: '#10b981',
                         strokeWidth: 2,
-                        r: 4,
+                        r: 5,
                         stroke: '#fff'
                       }}
-                      label={{ 
+                      activeDot={{
+                        fill: '#10b981',
+                        strokeWidth: 2,
+                        r: 7,
+                        stroke: '#fff'
+                      }}
+                      label={{
                         position: 'top',
-                        fontSize: isMobile ? 8 : 14,
-                        fill: '#6b7280',
-                        offset: isMobile ? 8 : 15,
-                        formatter: (value) => `${formatWeight(value)}`
+                        fontSize: isMobile ? 9 : 12,
+                        fill: '#059669',
+                        fontWeight: 600,
+                        offset: isMobile ? 8 : 12,
+                        formatter: (value) => value > 0 ? `${formatWeight(value)}` : ''
                       }}
                     />
                   </ComposedChart>
@@ -772,6 +796,153 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Average Orders & Weight Per Day Chart */}
+        {!loadingRevenue && monthlyRevenue.length > 0 && (
+          <div className="bg-white border border-gray-100 rounded-lg mb-3 shadow-sm">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+              <div className="flex items-center">
+                <ShoppingCart className="w-6 h-6 text-gray-700 mr-3" />
+                <h2 className="text-lg font-extralight text-black">เฉลี่ยต่อวัน</h2>
+              </div>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-200"
+              >
+                {availableYears.map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="p-4 sm:p-4 px-0 sm:px-4">
+              {/* Legend */}
+              <div className="flex items-center justify-end gap-4 mb-3 px-4 sm:px-0">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-gray-900"></div>
+                  <span className="text-sm text-gray-600">ออเดอร์/วัน</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-1 rounded bg-amber-500"></div>
+                  <span className="text-sm text-gray-600">กก./วัน</span>
+                </div>
+              </div>
+
+              <div className="h-64 sm:h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart
+                    data={monthlyRevenue}
+                    margin={{
+                      top: isMobile ? 25 : 40,
+                      right: isMobile ? 5 : 40,
+                      left: isMobile ? 0 : 20,
+                      bottom: isMobile ? 5 : 20
+                    }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="#f0f0f0"
+                      horizontal={true}
+                      vertical={false}
+                    />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: isMobile ? 10 : 12 }}
+                      axisLine={{ stroke: '#e0e0e0' }}
+                      tickLine={{ stroke: '#e0e0e0' }}
+                      interval={0}
+                      angle={-45}
+                      textAnchor="end"
+                      height={isMobile ? 25 : 40}
+                    />
+                    <YAxis
+                      yAxisId="orders"
+                      orientation="left"
+                      tick={{ fontSize: isMobile ? 10 : 12, fill: '#111827' }}
+                      axisLine={{ stroke: '#e0e0e0' }}
+                      tickLine={{ stroke: '#e0e0e0' }}
+                      stroke="#111827"
+                      domain={[0, 'auto']}
+                    />
+                    <YAxis
+                      yAxisId="weight"
+                      orientation="right"
+                      tick={{ fontSize: isMobile ? 10 : 12, fill: '#f59e0b' }}
+                      axisLine={{ stroke: '#e0e0e0' }}
+                      tickLine={{ stroke: '#e0e0e0' }}
+                      stroke="#f59e0b"
+                      domain={[0, 'auto']}
+                    />
+                    <Tooltip
+                      formatter={(value, name) => {
+                        if (name === 'avgOrdersPerDay') {
+                          return [value + ' ออเดอร์', 'เฉลี่ยออเดอร์/วัน'];
+                        } else if (name === 'avgWeightPerDay') {
+                          return [value + ' กก.', 'เฉลี่ย กก./วัน'];
+                        }
+                        return [value, name];
+                      }}
+                      labelFormatter={(label) => {
+                        const month = monthlyRevenue.find(m => m.month === label);
+                        return month ? month.monthName : label;
+                      }}
+                      labelStyle={{ color: '#000', fontWeight: 500 }}
+                      contentStyle={{
+                        backgroundColor: 'white',
+                        border: '1px solid #e0e0e0',
+                        borderRadius: '8px',
+                        padding: '10px 14px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}
+                    />
+                    <Bar
+                      yAxisId="orders"
+                      dataKey="avgOrdersPerDay"
+                      name="avgOrdersPerDay"
+                      fill="#111827"
+                      radius={[4, 4, 0, 0]}
+                      label={{
+                        position: 'inside',
+                        fontSize: isMobile ? 10 : 12,
+                        fill: '#fff',
+                        fontWeight: 600,
+                        formatter: (value) => value > 0 ? value : ''
+                      }}
+                    />
+                    <Line
+                      yAxisId="weight"
+                      type="monotone"
+                      dataKey="avgWeightPerDay"
+                      name="avgWeightPerDay"
+                      stroke="#f59e0b"
+                      strokeWidth={3}
+                      dot={{
+                        fill: '#f59e0b',
+                        strokeWidth: 2,
+                        r: 5,
+                        stroke: '#fff'
+                      }}
+                      activeDot={{
+                        fill: '#f59e0b',
+                        strokeWidth: 2,
+                        r: 7,
+                        stroke: '#fff'
+                      }}
+                      label={{
+                        position: 'top',
+                        fontSize: isMobile ? 9 : 12,
+                        fill: '#d97706',
+                        fontWeight: 600,
+                        offset: isMobile ? 8 : 12,
+                        formatter: (value) => value > 0 ? `${value}` : ''
+                      }}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Order Predictions */}
         {loadingPredictions ? (

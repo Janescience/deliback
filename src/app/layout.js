@@ -3,6 +3,7 @@ import Sidebar from '@/components/Layout/Sidebar';
 import QuickActionWrapper from '@/components/Layout/QuickActionWrapper';
 import { Toaster } from 'react-hot-toast';
 import { Kanit } from 'next/font/google';
+import PWARegister from '@/app/pwa-register';
 
 const kanit = Kanit({
   subsets: ['latin', 'thai'],
@@ -10,17 +11,27 @@ const kanit = Kanit({
   display: 'swap',
 });
 
+export const viewport = {
+  themeColor: '#0b0b0f',
+};
+
 export const metadata = {
-  title: 'Ordix — Smart order operations.',
+  title: 'Ordix',
   description: 'ระบบจัดการ Order อัจฉริยะ',
+  applicationName: 'Ordix',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    title: 'Ordix',
+    statusBarStyle: 'black-translucent',
+  },
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
-      { url: '/boxes.svg', type: 'image/svg+xml' },
+      { url: '/ordix-icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/ordix-icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
-    apple: [
-      { url: '/apple-touch-icon.png', sizes: '180x180' },
-    ],
+    apple: [{ url: '/ordix-icon-192.png', sizes: '192x192', type: 'image/png' }],
   },
 };
 
@@ -28,6 +39,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="th">
       <body className={kanit.className}>
+        <PWARegister />
         <div className="flex min-h-screen bg-white">
           <Sidebar />
           <main className="flex-1 ml-0">

@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { Settings, Save, RotateCcw, Building2, User, ChevronRight } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import PageHeader from '@/components/Layout/PageHeader';
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState(null);
@@ -73,20 +74,9 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <>
-        {/* Mobile Fixed Header */}
-        <div className="lg:hidden fixed top-0 left-0 right-0 bg-white px-4 py-3 z-40 border-b border-gray-200">
-          <div className="flex items-center">
-            <Settings className="w-5 h-5 text-gray-600 mr-2" />
-            <h1 className="text-xl font-light text-black">การตั้งค่า</h1>
-          </div>
-        </div>
+        <PageHeader title="การตั้งค่า" />
 
         <div className="w-full max-w-4xl mx-auto px-2 sm:px-4">
-          {/* Desktop Header */}
-          <div className="hidden lg:flex justify-between items-center mb-6">
-            <h1 className="text-2xl sm:text-3xl font-light text-black">การตั้งค่า</h1>
-          </div>
-
           <div className="text-center py-8 text-gray-500">กำลังโหลด...</div>
         </div>
       </>
@@ -95,29 +85,20 @@ export default function SettingsPage() {
 
   return (
     <>
-      {/* Mobile Fixed Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 bg-white px-4 py-3 z-40 border-b border-gray-200">
-        <div className="flex items-center">
-          <Settings className="w-5 h-5 text-gray-600 mr-2" />
-          <h1 className="text-xl font-light text-black">การตั้งค่า</h1>
+      <PageHeader title="การตั้งค่า">
+        <div className="flex space-x-3">
+          <Button onClick={handleReset} variant="secondary" size="md">
+            <RotateCcw size={16} className="mr-2" />
+            รีเซ็ต
+          </Button>
+          <Button onClick={handleSave} size="md" disabled={saving}>
+            <Save size={16} className="mr-2" />
+            {saving ? 'กำลังบันทึก...' : 'บันทึก'}
+          </Button>
         </div>
-      </div>
+      </PageHeader>
 
       <div className="w-full max-w-4xl mx-auto px-2 sm:px-4">
-        {/* Desktop Header */}
-        <div className="hidden lg:flex justify-between items-center mb-6">
-          <h1 className="text-2xl sm:text-3xl font-light text-black">การตั้งค่า</h1>
-          <div className="flex space-x-3">
-            <Button onClick={handleReset} variant="secondary" size="md">
-              <RotateCcw size={16} className="mr-2" />
-              รีเซ็ต
-            </Button>
-            <Button onClick={handleSave} size="md" disabled={saving}>
-              <Save size={16} className="mr-2" />
-              {saving ? 'กำลังบันทึก...' : 'บันทึก'}
-            </Button>
-          </div>
-        </div>
 
         {/* Mobile Action Buttons */}
         <div className="lg:hidden fixed bottom-4 right-4 flex space-x-2 z-40">

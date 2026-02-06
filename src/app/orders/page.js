@@ -5,6 +5,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import OrderTable from '@/components/Tables/OrderTable';
 import OrderForm from '@/components/Forms/OrderForm';
+import PageHeader from '@/components/Layout/PageHeader';
 import { Plus, ChevronUp, ChevronDown,PlusIcon } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -359,12 +360,11 @@ export default function OrdersPage() {
 
   return (
     <>
-      {/* Mobile Fixed Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 bg-white px-4 py-3 z-40 border-b border-gray-300">
-        <div className="flex items-center">
-          <h1 className="text-xl font-light text-black">จัดการคำสั่งซื้อ</h1>
-        </div>
-      </div>
+      <PageHeader title="จัดการคำสั่งซื้อ">
+        <Button onClick={handleCreate} size="md">
+          + คำสั่งซื้อ
+        </Button>
+      </PageHeader>
 
       {/* Mobile FAB (Floating Action Button) */}
       <button
@@ -376,13 +376,6 @@ export default function OrdersPage() {
       </button>
 
       <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 overflow-hidden pb-32 lg:pb-4">
-        {/* Desktop Header */}
-        <div className="hidden lg:flex justify-between items-center mb-4 sm:mb-6">
-          <h1 className="text-2xl sm:text-3xl font-light text-black">จัดการคำสั่งซื้อ</h1>
-          <Button onClick={handleCreate} size="md">
-             + คำสั่งซื้อ
-          </Button>
-        </div>
 
       {/* Search Criteria - Collapsible */}
       <div className="bg-white border border-gray-200 rounded mb-2 ">

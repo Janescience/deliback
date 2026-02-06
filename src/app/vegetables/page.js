@@ -5,6 +5,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import VegetableTable from '@/components/Tables/VegetableTable';
 import VegetableForm from '@/components/Forms/VegetableForm';
+import PageHeader from '@/components/Layout/PageHeader';
 import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -181,12 +182,11 @@ export default function VegetablesPage() {
 
   return (
     <>
-      {/* Mobile Fixed Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 bg-white px-4 py-3 z-40 border-b border-gray-300">
-        <div className="flex items-center">
-          <h1 className="text-xl font-light text-black">จัดการสินค้า</h1>
-        </div>
-      </div>
+      <PageHeader title="จัดการสินค้า">
+        <Button onClick={handleCreate} size="md">
+          + ผัก
+        </Button>
+      </PageHeader>
 
       {/* Mobile FAB */}
       <button
@@ -198,13 +198,6 @@ export default function VegetablesPage() {
       </button>
 
       <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 overflow-hidden">
-        {/* Desktop Header */}
-        <div className="hidden lg:flex justify-between items-center mb-4 sm:mb-6">
-          <h1 className="text-2xl sm:text-3xl font-light text-black">จัดการสินค้า</h1>
-          <Button onClick={handleCreate} size="md">
-            + ผัก
-          </Button>
-        </div>
 
         {/* Search and Filter Bar */}
         <div className="flex flex-row gap-2 sm:gap-4 mb-2">
