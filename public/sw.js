@@ -3,7 +3,7 @@
 // Minimal cache-first SW for static assets + offline fallback.
 // Note: keep this file in /public so it is served from "/sw.js".
 
-const CACHE_NAME = "ordix-static-v3";
+const CACHE_NAME = "ordix-static-v4";
 const OFFLINE_URL = "/offline";
 
 self.addEventListener("install", (event) => {
@@ -13,9 +13,9 @@ self.addEventListener("install", (event) => {
       await cache.addAll([
         "/",
         "/manifest.webmanifest",
-        "/ordix-icon-192.png",
-        "/ordix-icon-512.png",
-        "/ordix-logo.png",
+        "/boxes-icon-192.png",
+        "/boxes-icon-512.png",
+        "/boxes.png",
         "/favicon.ico",
         OFFLINE_URL
       ]);

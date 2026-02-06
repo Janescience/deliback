@@ -16,6 +16,11 @@ const VegetableSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
+  cost_per_kg: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
   photo: String
 }, {
   timestamps: true

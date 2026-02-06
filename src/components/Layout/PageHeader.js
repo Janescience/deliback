@@ -14,7 +14,6 @@ export default function PageHeader({
       {/* Mobile Fixed Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 bg-white px-4 py-3 z-40 border-b border-gray-300">
         <div className="flex items-center space-x-2">
-          <CompanyLogo size={logoSize.mobile} />
           <h1 className={mobileClassName}>{title}</h1>
         </div>
       </div>
@@ -22,7 +21,6 @@ export default function PageHeader({
       {/* Desktop Header */}
       <div className="hidden lg:flex justify-between items-center mb-4 sm:mb-6">
         <div className="flex items-center space-x-3">
-          <CompanyLogo size={logoSize.desktop} />
           <h1 className={desktopClassName}>{title}</h1>
         </div>
         {children && <div className="flex items-center">{children}</div>}

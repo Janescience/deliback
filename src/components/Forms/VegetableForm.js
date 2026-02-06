@@ -7,6 +7,7 @@ export default function VegetableForm({ vegetable, onSubmit, onCancel, onDelete,
     name_th: '',
     name_eng: '',
     price: '',
+    cost_per_kg: '',
     status: 'available',
     photo: ''
   });
@@ -17,6 +18,7 @@ export default function VegetableForm({ vegetable, onSubmit, onCancel, onDelete,
         name_th: vegetable.name_th || '',
         name_eng: vegetable.name_eng || '',
         price: vegetable.price || '',
+        cost_per_kg: vegetable.cost_per_kg || '',
         status: vegetable.status || 'available',
         photo: vegetable.photo || ''
       });
@@ -25,11 +27,12 @@ export default function VegetableForm({ vegetable, onSubmit, onCancel, onDelete,
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    // Convert price to number and validate
+
+    // Convert price and cost to number and validate
     const cleanedData = {
       ...formData,
       price: parseFloat(formData.price) || 0,
+      cost_per_kg: parseFloat(formData.cost_per_kg) || 0,
       name_eng: formData.name_eng.trim() || undefined,
       photo: formData.photo.trim() || undefined
     };
@@ -45,13 +48,13 @@ export default function VegetableForm({ vegetable, onSubmit, onCancel, onDelete,
     });
   };
 
-  const handlePriceChange = (e) => {
-    const value = e.target.value;
+  const handleNumberChange = (e) => {
+    const { name, value } = e.target;
     // Allow only numbers and decimal point
     if (value === '' || /^\d*\.?\d*$/.test(value)) {
       setFormData({
         ...formData,
-        price: value
+        [name]: value
       });
     }
   };
@@ -93,20 +96,35 @@ export default function VegetableForm({ vegetable, onSubmit, onCancel, onDelete,
         />
       </div>
 
-      {/* Price and Status Row */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+      {/* Price, Cost and Status Row */}
+      <div className="grid grid-cols-3 gap-3 sm:gap-4">
         {/* Price - Required */}
         <div>
           <label className="block text-sm font-light mb-1 sm:mb-2 text-black">
-            ราคา (บาท) *
+            ราคาขาย *
           </label>
           <input
             type="text"
             name="price"
             value={formData.price}
-            onChange={handlePriceChange}
+            onChange={handleNumberChange}
             required
-            placeholder="0.00"
+            placeholder="0"
+            className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-minimal rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black text-sm sm:text-base"
+          />
+        </div>
+
+        {/* Cost per kg */}
+        <div>
+          <label className="block text-sm font-light mb-1 sm:mb-2 text-black">
+            ต้นทุน/กก.
+          </label>
+          <input
+            type="text"
+            name="cost_per_kg"
+            value={formData.cost_per_kg}
+            onChange={handleNumberChange}
+            placeholder="0"
             className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-minimal rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black text-sm sm:text-base"
           />
         </div>
@@ -129,10 +147,6 @@ export default function VegetableForm({ vegetable, onSubmit, onCancel, onDelete,
           </select>
         </div>
       </div>
-
-      <p className="text-xs text-minimal-gray -mt-1 sm:hidden">
-        กรอกราคาเป็นตัวเลข เช่น 25 หรือ 25.50
-      </p>
 
       {/* Photo URL */}
       <div>

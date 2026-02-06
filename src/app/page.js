@@ -561,6 +561,37 @@ export default function Dashboard() {
                 </div>
               </div>
 
+              {/* Cost & Profit Row */}
+              {(financialSummary.totalCost > 0 || financialSummary.profit !== undefined) && (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {/* Total Cost Card */}
+                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <TrendingDown className="w-5 h-5 text-gray-600" />
+                      <span className="text-sm text-gray-500">ต้นทุน</span>
+                    </div>
+                    <div className="text-xl font-extralight text-black">{formatMoney(financialSummary.totalCost || 0)}</div>
+                  </div>
+
+                  {/* Profit Card */}
+                  <div className={`rounded-lg p-3 border ${
+                    (financialSummary.profit || 0) >= 0
+                      ? 'bg-gray-50 border-gray-200'
+                      : 'bg-red-50 border-red-200'
+                  }`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <TrendingUp className="w-5 h-5 text-gray-600" />
+                      <span className="text-sm text-gray-500">กำไร</span>
+                    </div>
+                    <div className={`text-xl font-extralight ${
+                      (financialSummary.profit || 0) >= 0 ? 'text-black' : 'text-red-600'
+                    }`}>
+                      {(financialSummary.profit || 0) >= 0 ? '' : '-'}{formatMoney(Math.abs(financialSummary.profit || 0))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Payment Methods Breakdown */}
               <div className="mt-4">
                 <div className="text-sm font-extralight text-black mb-3">แยกตามวิธีชำระเงิน</div>
@@ -787,6 +818,152 @@ export default function Dashboard() {
                         fontWeight: 600,
                         offset: isMobile ? 8 : 12,
                         formatter: (value) => value > 0 ? `${formatWeight(value)}` : ''
+                      }}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Cost & Profit Chart */}
+        {!loadingRevenue && monthlyRevenue.length > 0 && monthlyRevenue.some(m => m.totalCost > 0 || m.profit !== 0) && (
+          <div className="bg-white border border-gray-100 rounded-lg mb-3 shadow-sm">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+              <div className="flex items-center">
+                <Wallet className="w-6 h-6 text-gray-700 mr-3" />
+                <h2 className="text-lg font-extralight text-black">ต้นทุน & กำไร</h2>
+              </div>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-200"
+              >
+                {availableYears.map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="p-4 sm:p-4 px-0 sm:px-4">
+              {/* Legend */}
+              <div className="flex items-center justify-end gap-4 mb-3 px-4 sm:px-0">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-gray-800"></div>
+                  <span className="text-sm text-gray-600">ต้นทุน (บาท)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-1 rounded bg-teal-500"></div>
+                  <span className="text-sm text-gray-600">กำไร (บาท)</span>
+                </div>
+              </div>
+
+              <div className="h-64 sm:h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart
+                    data={monthlyRevenue}
+                    margin={{
+                      top: isMobile ? 25 : 40,
+                      right: isMobile ? 5 : 40,
+                      left: isMobile ? 0 : 20,
+                      bottom: isMobile ? 5 : 20
+                    }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="#f0f0f0"
+                      horizontal={true}
+                      vertical={false}
+                    />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: isMobile ? 10 : 12 }}
+                      axisLine={{ stroke: '#e0e0e0' }}
+                      tickLine={{ stroke: '#e0e0e0' }}
+                      interval={0}
+                      angle={-45}
+                      textAnchor="end"
+                      height={isMobile ? 25 : 40}
+                    />
+                    <YAxis
+                      yAxisId="cost"
+                      orientation="left"
+                      tickFormatter={(value) => `${(value/1000)}k`}
+                      stroke="#1f2937"
+                      fontSize={isMobile ? 10 : 12}
+                      tick={{ fontSize: isMobile ? 10 : 12 }}
+                    />
+                    <YAxis
+                      yAxisId="profit"
+                      orientation="right"
+                      tickFormatter={(value) => `${(value/1000)}k`}
+                      stroke="#14b8a6"
+                      fontSize={isMobile ? 10 : 12}
+                      tick={{ fontSize: isMobile ? 10 : 12, fill: '#14b8a6' }}
+                    />
+                    <Tooltip
+                      formatter={(value, name) => {
+                        if (name === 'totalCost') {
+                          return [formatMoney(value) + ' บาท', 'ต้นทุน'];
+                        } else if (name === 'profit') {
+                          return [formatMoney(value) + ' บาท', 'กำไร'];
+                        }
+                        return [value, name];
+                      }}
+                      labelFormatter={(label) => {
+                        const month = monthlyRevenue.find(m => m.month === label);
+                        return month ? month.monthName : label;
+                      }}
+                      labelStyle={{ color: '#000', fontWeight: 500 }}
+                      contentStyle={{
+                        backgroundColor: 'white',
+                        border: '1px solid #e0e0e0',
+                        borderRadius: '8px',
+                        padding: '10px 14px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}
+                    />
+                    <Bar
+                      yAxisId="cost"
+                      dataKey="totalCost"
+                      name="totalCost"
+                      fill="#1f2937"
+                      radius={[4, 4, 0, 0]}
+                      label={{
+                        position: 'inside',
+                        fontSize: isMobile ? 8 : 11,
+                        fill: '#fff',
+                        fontWeight: 500,
+                        formatter: (value) => value > 0 ? (isMobile ? `${Math.round(value/1000)}k` : formatMoney(value)) : ''
+                      }}
+                    />
+                    <Line
+                      yAxisId="profit"
+                      type="monotone"
+                      dataKey="profit"
+                      name="profit"
+                      stroke="#14b8a6"
+                      strokeWidth={3}
+                      dot={{
+                        fill: '#14b8a6',
+                        strokeWidth: 2,
+                        r: 5,
+                        stroke: '#fff'
+                      }}
+                      activeDot={{
+                        fill: '#14b8a6',
+                        strokeWidth: 2,
+                        r: 7,
+                        stroke: '#fff'
+                      }}
+                      label={{
+                        position: 'top',
+                        fontSize: isMobile ? 9 : 12,
+                        fill: '#0d9488',
+                        fontWeight: 600,
+                        offset: isMobile ? 8 : 12,
+                        formatter: (value) => value !== 0 ? (isMobile ? `${Math.round(value/1000)}k` : formatMoney(value)) : ''
                       }}
                     />
                   </ComposedChart>

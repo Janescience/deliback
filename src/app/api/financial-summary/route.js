@@ -1,13 +1,47 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Order from '@/models/Order';
+import OrderDetail from '@/models/OrderDetail';
 
 export async function GET(request) {
   try {
     await dbConnect();
-    
+
     const startTime = Date.now();
-    
+
+    // Calculate total cost from order details with vegetable cost_per_kg
+    const costResult = await OrderDetail.aggregate([
+      {
+        $lookup: {
+          from: 'vegetables',
+          localField: 'vegetable_id',
+          foreignField: '_id',
+          as: 'vegetable'
+        }
+      },
+      {
+        $unwind: {
+          path: '$vegetable',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalCost: {
+            $sum: {
+              $multiply: [
+                '$quantity',
+                { $ifNull: ['$vegetable.cost_per_kg', 0] }
+              ]
+            }
+          }
+        }
+      }
+    ]);
+
+    const totalCost = costResult.length > 0 ? (costResult[0].totalCost || 0) : 0;
+
     // Use MongoDB aggregation pipeline for better performance
     const result = await Order.aggregate([
       {
@@ -122,6 +156,8 @@ export async function GET(request) {
         totalRevenue: 0,
         paidAmount: 0,
         unpaidAmount: 0,
+        totalCost: totalCost,
+        profit: -totalCost,
         paymentMethodBreakdown: {
           cash: { paid: 0, unpaid: 0 },
           credit: { paid: 0, unpaid: 0 },
@@ -129,29 +165,32 @@ export async function GET(request) {
         }
       });
     }
-    
+
     const summary = result[0];
-    
+    const revenue = summary.totalRevenue || 0;
+
     const response = {
-      totalRevenue: summary.totalRevenue || 0,
+      totalRevenue: revenue,
       paidAmount: summary.paidAmount || 0,
       unpaidAmount: summary.unpaidAmount || 0,
+      totalCost: totalCost,
+      profit: revenue - totalCost,
       paymentMethodBreakdown: {
-        cash: { 
-          paid: summary.cashPaid || 0, 
-          unpaid: summary.cashUnpaid || 0 
+        cash: {
+          paid: summary.cashPaid || 0,
+          unpaid: summary.cashUnpaid || 0
         },
-        credit: { 
-          paid: summary.creditPaid || 0, 
-          unpaid: summary.creditUnpaid || 0 
+        credit: {
+          paid: summary.creditPaid || 0,
+          unpaid: summary.creditUnpaid || 0
         },
-        transfer: { 
-          paid: summary.transferPaid || 0, 
-          unpaid: summary.transferUnpaid || 0 
+        transfer: {
+          paid: summary.transferPaid || 0,
+          unpaid: summary.transferUnpaid || 0
         }
       }
     };
-    
+
     return NextResponse.json(response);
   } catch (error) {
     console.error('Financial summary error:', error);

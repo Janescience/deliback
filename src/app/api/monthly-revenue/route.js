@@ -87,8 +87,66 @@ export async function GET(request) {
         $sort: { '_id': 1 }
       }
     ]);
-    
-    const endTime = Date.now();
+
+    // Calculate monthly cost by joining order details with vegetables
+    const costResult = await OrderDetail.aggregate([
+      {
+        // Lookup order to get delivery_date
+        $lookup: {
+          from: 'orders',
+          localField: 'order_id',
+          foreignField: '_id',
+          as: 'order'
+        }
+      },
+      {
+        $unwind: '$order'
+      },
+      {
+        // Filter by year
+        $match: {
+          'order.delivery_date': {
+            $gte: yearStart,
+            $lte: yearEnd
+          }
+        }
+      },
+      {
+        // Lookup vegetable to get cost_per_kg
+        $lookup: {
+          from: 'vegetables',
+          localField: 'vegetable_id',
+          foreignField: '_id',
+          as: 'vegetable'
+        }
+      },
+      {
+        $unwind: {
+          path: '$vegetable',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        // Group by month
+        $group: {
+          _id: { $month: '$order.delivery_date' },
+          totalCost: {
+            $sum: {
+              $multiply: [
+                '$quantity',
+                { $ifNull: ['$vegetable.cost_per_kg', 0] }
+              ]
+            }
+          }
+        }
+      }
+    ]);
+
+    // Create a map for monthly costs
+    const monthlyCostMap = {};
+    costResult.forEach(item => {
+      monthlyCostMap[item._id] = item.totalCost || 0;
+    });
     
     // Create array for all 12 months with Thai names
     const monthNames = [
@@ -106,6 +164,8 @@ export async function GET(request) {
       workingDays: 0,
       avgOrdersPerDay: 0,
       avgWeightPerDay: 0,
+      totalCost: 0,
+      profit: 0,
       monthNumber: index + 1
     }));
 
@@ -113,12 +173,16 @@ export async function GET(request) {
     result.forEach(item => {
       const monthIndex = item._id - 1; // MongoDB months are 1-based
       if (monthIndex >= 0 && monthIndex < 12) {
-        monthlyData[monthIndex].revenue = item.revenue || 0;
+        const revenue = item.revenue || 0;
+        const cost = monthlyCostMap[item._id] || 0;
+        monthlyData[monthIndex].revenue = revenue;
         monthlyData[monthIndex].totalWeight = item.totalWeight || 0;
         monthlyData[monthIndex].orderCount = item.orderCount || 0;
         monthlyData[monthIndex].workingDays = item.workingDays || 0;
         monthlyData[monthIndex].avgOrdersPerDay = Math.round((item.avgOrdersPerDay || 0) * 10) / 10;
         monthlyData[monthIndex].avgWeightPerDay = Math.round((item.avgWeightPerDay || 0) * 10) / 10;
+        monthlyData[monthIndex].totalCost = Math.round(cost);
+        monthlyData[monthIndex].profit = Math.round(revenue - cost);
       }
     });
 
